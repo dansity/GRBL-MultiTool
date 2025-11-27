@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRBL Rectangle Pocket G-Code Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#ca8a04', /* Pocketing/Milling Gold */
+                        'secondary': '#4f46e5',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for better aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .input-group label {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .input-group input, .input-group textarea {
+            border: 1px solid #d1d5db;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #ca8a04;
+            box-shadow: 0 0 0 1px #ca8a04;
+        }
+        .btn-primary {
+            background-color: #ca8a04;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background-color: #a16207;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
+        <h1 class="text-3xl font-bold text-center text-primary mb-6">GRBL Square Pocket G-Code Generator</h1>
+        <p class="text-center text-gray-600 mb-8">Generates G-Code for a rectangular pocket using an inward spiral toolpath. The tool remains entirely within the defined boundary.</p>
+
+        <img src="square-pocket.png" width="70%" style="display: block; margin-left: auto; margin-right: auto;"></img>
+
+        <div id="form-section" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- X and Y dimensions -->
+            <div class="input-group">
+                <label for="maxX">Pocket Width (X, mm)</label>
+                <input type="number" id="maxX" value="50" min="1" step="0.1" required>
+            </div>
+            <div class="input-group">
+                <label for="maxY">Pocket Height (Y, mm)</label>
+                <input type="number" id="maxY" value="50" min="1" step="0.1" required>
+            </div>
+            <div class="input-group">
+                <label for="depth">Total Depth (Z, mm)</label>
+                <input type="number" id="depth" value="5.0" step="0.01" required>
+            </div>
+
+            <!-- Tool and Step parameters -->
+            <div class="input-group">
+                <label for="toolD">Tool Diameter (mm)</label>
+                <input type="number" id="toolD" value="6.0" min="0.1" step="0.1" required>
+            </div>
+            <div class="input-group">
+                <label for="overlapP">Stepover (% of ToolD)</label>
+                <input type="number" id="overlapP" value="40" min="10" max="99" step="1" required>
+            </div>
+            <div class="input-group">
+                <label for="stepDown">Stepdown (Z, mm)</label>
+                <input type="number" id="stepDown" value="1.0" min="0.01" step="0.01" required>
+            </div>
+
+            <!-- Feed Rate and Safety Height -->
+            <div class="input-group">
+                <label for="feedRate">Feed Rate (XY, mm/min)</label>
+                <input type="number" id="feedRate" value="800" min="1" step="10" required>
+            </div>
+            <div class="input-group">
+                <label for="plungeRate">Plunge Rate (Z, mm/min)</label>
+                <input type="number" id="plungeRate" value="200" min="1" step="10" required>
+            </div>
+            <div class="input-group">
+                <label for="safetyZ">Safety Z Height (mm)</label>
+                <input type="number" id="safetyZ" value="5.0" min="1.0" step="0.1" required>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-8">
+            <button onclick="generateGCode()" class="btn-primary flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                <span>Generate & Download G-Code</span>
+            </button>
+        </div>
+
+        <div id="output-section" class="mt-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Generated G-Code Preview</h2>
+            <textarea id="gcode-output" rows="15" class="w-full bg-gray-100 p-4 font-mono text-sm rounded-lg" readonly placeholder="G-Code will appear here after generation..."></textarea>
+        </div>
+
+        <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
+    </div>
+
+    <script>
+        // Constants for coordinate systems and units
+        const Z_CLEARANCE = 2.0; // Extra lift needed above safety Z when moving rapidly
+
+        // Utility to convert number to a fixed precision string (e.g., '1.234')
+        const fmt = (n) => n.toFixed(3);
+
+        /**
+         * Generates the cutting toolpath for a single Z level, using an inward rectangular spiral.
+         * The tool center is always offset by toolR from the boundary.
+         */
+        function generateSpiralToolpath(gcode, maxX, maxY, currentZ, stepover, feedRate, toolR) {
+            let xMin = toolR;
+            let yMin = toolR;
+            let xMax = maxX - toolR;
+            let yMax = maxY - toolR;
+
+            // Check if the pocket is wider than the tool
+            if (xMax < xMin || yMax < yMin) {
+                 gcode.push(`; ERROR: POCKET DIMENSIONS TOO SMALL FOR TOOL RADIUS! (maxX=${maxX}, maxY=${maxY}, toolR=${toolR})`);
+                 return;
+            }
+
+            let firstPass = true;
+
+            // Spiral inwards until the path overlaps or crosses
+            while (xMax >= xMin && yMax >= yMin) {
+
+                // 1. Move to the start point (bottom-left of the current rectangle)
+                if (firstPass) {
+                    // Rapid move to start point on the very first pass of this Z level
+                    gcode.push(`G0 X${fmt(xMin)} Y${fmt(yMin)} ; Rapid to start of spiral path (Tool center offset)`);
+                    firstPass = false;
+                } else {
+                    // Linear move to start point (from the previous inner point)
+                    // This diagonal move executes the step-over
+                    gcode.push(`G1 X${fmt(xMin)} Y${fmt(yMin)} F${fmt(feedRate)} ; Step over and start new rectangle`);
+                }
+
+                // --- Cut the current rectangle boundary (Clockwise) ---
+
+                // 2. Bottom edge: Left to Right (X Min -> X Max)
+                gcode.push(`G1 X${fmt(xMax)} F${fmt(feedRate)}`);
+
+                // 3. Right edge: Bottom to Top (Y Min -> Y Max)
+                gcode.push(`G1 Y${fmt(yMax)}`);
+
+                // 4. Top edge: Right to Left (X Max -> X Min)
+                gcode.push(`G1 X${fmt(xMin)}`);
+
+                // 5. Left edge: Top to Bottom (Y Max -> Y Min)
+                // FIX: Added this line to complete the square perimeter before stepping over.
+                gcode.push(`G1 Y${fmt(yMin)}`);
+
+                // 6. Step over inward for the next loop
+                xMin += stepover;
+                yMin += stepover;
+                xMax -= stepover;
+                yMax -= stepover;
+
+                // If the next iteration is just a single line or point, the loop condition will handle it.
+            }
+
+            // Final center cleanup (if any space left, cut to the center point)
+            if (xMax < xMin || yMax < yMin) {
+                let centerX = maxX / 2;
+                let centerY = maxY / 2;
+                gcode.push(`G1 X${fmt(centerX)} Y${fmt(centerY)} F${fmt(feedRate)} ; Final move to center point`);
+            }
+        }
+
+
+        /**
+         * Validates inputs and generates the G-Code.
+         */
+        function generateGCode() {
+            const output = document.getElementById('gcode-output');
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.classList.add('hidden');
+            output.value = '';
+
+            // --- 1. Read Inputs ---
+            const maxX = parseFloat(document.getElementById('maxX').value);
+            const maxY = parseFloat(document.getElementById('maxY').value);
+            let depth = parseFloat(document.getElementById('depth').value);
+            const toolD = parseFloat(document.getElementById('toolD').value);
+            const overlapP = parseFloat(document.getElementById('overlapP').value);
+            const stepDown = parseFloat(document.getElementById('stepDown').value);
+            const feedRate = parseFloat(document.getElementById('feedRate').value);
+            const plungeRate = parseFloat(document.getElementById('plungeRate').value);
+            const safetyZ = parseFloat(document.getElementById('safetyZ').value);
+
+            // Derived values
+            const toolR = toolD / 2.0;
+            const stepover = toolD * (overlapP / 100);
+            const maxZSafe = safetyZ + Z_CLEARANCE;
+
+            // Convert depth to a negative value if it's positive (milling down)
+            depth = -Math.abs(depth);
+
+            // --- 2. Input Validation ---
+            if (isNaN(maxX) || isNaN(maxY) || isNaN(depth) || isNaN(toolD) || isNaN(overlapP) || isNaN(feedRate) || isNaN(plungeRate) || isNaN(safetyZ) || isNaN(stepDown)) {
+                errorDiv.textContent = "Please ensure all fields are filled with valid numbers.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            if (maxX <= 0 || maxY <= 0 || toolD <= 0 || overlapP <= 0 || overlapP >= 100 || feedRate <= 0 || plungeRate <= 0 || safetyZ < 0 || stepDown <= 0) {
+                errorDiv.textContent = "All dimensions, rates, and overlap must be positive. Safety Z must be non-negative.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            if (maxX < toolD || maxY < toolD) {
+                errorDiv.textContent = `Pocket size (X=${maxX}, Y=${maxY}) must be larger than the tool diameter (${toolD}mm) to maintain tool-inside boundary.`;
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // --- 3. G-Code Generation ---
+            let gcode = [];
+
+            // 3.1 Preamble (GRBL compatible)
+            gcode.push(`; GRBL RECTANGULAR POCKET G-CODE GENERATOR`);
+            gcode.push(`; Dimensions: X${fmt(maxX)} x Y${fmt(maxY)}`);
+            gcode.push(`; Tool Diameter: ${fmt(toolD)}mm, Stepover: ${fmt(stepover)}mm (${fmt(overlapP)}% overlap)`);
+            gcode.push(`; Total Depth: ${fmt(depth)}mm, Stepdown: ${fmt(stepDown)}mm`);
+            gcode.push(`; Feed Rate: ${fmt(feedRate)} mm/min, Plunge Rate: ${fmt(plungeRate)} mm/min`);
+            gcode.push(`; Tool will remain inside the X0, Y0 to X${fmt(maxX)}, Y${fmt(maxY)} boundary.`);
+            gcode.push(`; --- START PREAMBLE ---`);
+            gcode.push(`G21 ; Set units to millimeters`);
+            gcode.push(`G90 ; Set to absolute positioning`);
+            gcode.push(`M3 S10000 ; Start spindle (ADJUST S-VALUE FOR YOUR SPINDLE)`);
+            gcode.push(`G0 Z${fmt(maxZSafe)} ; Lift to maximum safe height`);
+            gcode.push(`G0 X0 Y0 ; Go to starting corner (Work Zero)`);
+            gcode.push(`G0 Z${fmt(safetyZ)} ; Move to safety height`);
+            gcode.push(`F${fmt(feedRate)} ; Set XY cutting feed rate`);
+            gcode.push(`; --- END PREAMBLE ---`);
+
+            let currentZ = 0.0;
+            let passCount = 0;
+
+            // 3.2 Z-Axis (Depth) Loop
+            while (currentZ > depth - 0.001) { // -0.001 tolerance for floating point
+                passCount++;
+                currentZ -= stepDown;
+
+                // Clamp Z to the final depth
+                if (currentZ < depth) {
+                    currentZ = depth;
+                }
+
+                gcode.push(`\n; === Z PASS ${passCount}: Depth Z${fmt(currentZ)} ===`);
+
+                // 1. Move back to the starting corner (X0, Y0)
+                gcode.push(`G0 X0 Y0 ; Return to Work Zero`);
+
+                // 2. Plunge to the current cutting depth
+                gcode.push(`G1 Z${fmt(currentZ)} F${fmt(plungeRate)} ; Plunge to cutting depth`);
+
+                // 3. Generate the spiral toolpath
+                generateSpiralToolpath(gcode, maxX, maxY, currentZ, stepover, feedRate, toolR);
+
+                // 4. Retract slightly (within the pocket area)
+                gcode.push(`G0 Z${fmt(safetyZ)} ; Retract to safety height`);
+
+                // Break the Z loop if we hit the final depth
+                if (currentZ === depth) {
+                    break;
+                }
+            }
+
+            // 3.3 Postamble
+            gcode.push(`\n; --- START POSTAMBLE ---`);
+            gcode.push(`G0 Z${fmt(maxZSafe)} ; Lift to max safe height for travel`);
+            gcode.push(`G0 X0 Y0 ; Return to Work Zero`);
+            gcode.push(`M5 ; Stop spindle`);
+            gcode.push(`M2 ; Program end (Standard GRBL/G-Code End)`);
+            gcode.push(`; --- END POSTAMBLE ---`);
+
+            const finalGCode = gcode.join('\n');
+            output.value = finalGCode;
+
+            // --- 4. Automatic Download ---
+            const blob = new Blob([finalGCode], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `grbl_pocket_X${maxX}_Y${maxY}_D${Math.abs(depth).toFixed(1)}.gcode`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

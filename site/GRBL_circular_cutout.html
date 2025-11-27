@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRBL Standalone Circular Cutout Generator</title>
+
+    <!-- Standalone CSS Styling (Cyan Accent) -->
+    <style>
+        /* Base Reset & Typography */
+        body {
+            font-family: 'Inter', sans-serif, Arial;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            padding: 24px 40px;
+        }
+
+        /* Color Variables (Cyan Accent) */
+        :root {
+            --primary: #06b6d4; /* Bold Cyan */
+            --primary-hover: #0e7490;
+            --gray-700: #374151;
+            --gray-600: #4b5563;
+        }
+
+        /* Headings and Paragraphs */
+        h1 {
+            font-size: 1.875rem; /* 3xl */
+            font-weight: 700; /* Bold */
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        p {
+            text-align: center;
+            color: var(--gray-600);
+            margin-bottom: 2rem;
+        }
+        h2 {
+            font-size: 1.25rem; /* xl */
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 1rem;
+        }
+
+        /* Input Group Styling */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .input-group label {
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 4px;
+            display: block;
+        }
+        .input-group input, .input-group textarea {
+            border: 1px solid #d1d5db;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        /* Button Styling */
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary svg {
+            height: 20px;
+            width: 20px;
+            margin-right: 8px;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        /* Textarea Output & Error Message */
+        #gcode-output {
+            background-color: #f5f5f5;
+            font-family: monospace;
+            font-size: 0.875rem; /* sm */
+            min-height: 250px;
+            resize: vertical;
+        }
+        #error-message {
+            margin-top: 1rem;
+            padding: 12px;
+            background-color: #fee2e2; /* Red-100 */
+            border: 1px solid #f87171; /* Red-400 */
+            color: #b91c1c; /* Red-700 */
+            border-radius: 8px;
+            display: none; /* Controlled by JS */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>GRBL Circular Cutout G-Code Generator</h1>
+        <p>Generates G-Code for a circular cutout (or profile pass) using a single circle (G3 arc) per depth pass. The tool center is offset outside the defined diameter. Zero point is the center (X0, Y0).</p>
+        <p>Tool will lift up from center, travel to the side, plunge down and make the circular cuts. It is OK to have a screw in the middle.</p>
+
+        <img src="circle-cutout.png" width="70%" style="display: block; margin-left: auto; margin-right: auto;"></img>
+
+        <div id="form-section" class="grid-container">
+            <!-- Diameter dimension (instead of X/Y) -->
+            <div class="input-group">
+                <label for="diameter">Finished Cutout Diameter (mm)</label>
+                <input type="number" id="diameter" value="50" min="1" step="0.1" required>
+            </div>
+            <div class="input-group">
+                <label for="depth">Total Depth (Z, mm)</label>
+                <input type="number" id="depth" value="10.0" step="0.01" required>
+            </div>
+
+            <!-- Tool and Step parameters -->
+            <div class="input-group">
+                <label for="toolD">Tool Diameter (mm)</label>
+                <input type="number" id="toolD" value="6.0" min="0.1" step="0.1" required>
+            </div>
+            <div class="input-group">
+                <label for="stepDown">Stepdown (Z, mm)</label>
+                <input type="number" id="stepDown" value="2.0" min="0.01" step="0.01" required>
+            </div>
+
+            <!-- Feed Rate and Safety Height -->
+            <div class="input-group">
+                <label for="feedRate">Feed Rate (XY, mm/min)</label>
+                <input type="number" id="feedRate" value="800" min="1" step="10" required>
+            </div>
+            <div class="input-group">
+                <label for="plungeRate">Plunge Rate (Z, mm/min)</label>
+                <input type="number" id="plungeRate" value="200" min="1" step="10" required>
+            </div>
+            <div class="input-group">
+                <label for="safetyZ">Safety Z Height (mm)</label>
+                <input type="number" id="safetyZ" value="5.0" min="1.0" step="0.1" required>
+            </div>
+        </div>
+
+        <div class="flex-center mb-8">
+            <button onclick="generateCutoutGCode()" class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                <span>Generate & Download G-Code</span>
+            </button>
+        </div>
+
+        <div id="output-section" class="mt-8">
+            <h2>Generated G-Code Preview</h2>
+            <textarea id="gcode-output" rows="15" readonly placeholder="G-Code will appear here after generation..."></textarea>
+        </div>
+
+        <div id="error-message"></div>
+    </div>
+
+<script>
+        // Constants for coordinate systems and units
+        const Z_CLEARANCE = 2.0;
+
+        // Utility to convert number to a fixed precision string (e.g., '1.234')
+        const fmt = (n) => n.toFixed(3);
+
+        /**
+         * Generates the G-Code for a circular cutout operation using multiple Z depth passes.
+         * The tool center is offset OUTSIDE the cutout diameter.
+         */
+        function generateCutoutGCode() {
+            const output = document.getElementById('gcode-output');
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.style.display = 'none';
+            output.value = '';
+
+            // --- 1. Read Inputs ---
+            const diameter = parseFloat(document.getElementById('diameter').value);
+            let depth = parseFloat(document.getElementById('depth').value);
+            const toolD = parseFloat(document.getElementById('toolD').value);
+            const stepDown = parseFloat(document.getElementById('stepDown').value);
+            const feedRate = parseFloat(document.getElementById('feedRate').value);
+            const plungeRate = parseFloat(document.getElementById('plungeRate').value);
+            const safetyZ = parseFloat(document.getElementById('safetyZ').value);
+
+            // Derived values
+            const toolR = toolD / 2.0;
+            const maxZSafe = safetyZ + Z_CLEARANCE;
+
+            // --- CRITICAL CUTOUT CALCULATION ---
+            // Tool center path radius = Finished Radius + Tool Radius
+            const pathR = (diameter / 2.0) + toolR;
+
+            // Convert depth to a negative value
+            depth = -Math.abs(depth);
+
+            // --- 2. Input Validation (Simplified) ---
+            if (isNaN(diameter) || isNaN(depth) || isNaN(toolD) || isNaN(stepDown) || isNaN(feedRate) || isNaN(plungeRate) || isNaN(safetyZ) || diameter <= 0 || toolD <= 0 || stepDown <= 0 || feedRate <= 0 || plungeRate <= 0) {
+                errorDiv.textContent = "Please ensure all fields are positive and valid numbers.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // --- 3. G-Code Generation ---
+            let gcode = [];
+
+            // 3.1 Preamble
+            gcode.push(`; GRBL CIRCULAR CUTOUT GENERATOR`);
+            gcode.push(`; Finished Diameter: ${fmt(diameter)}, Total Depth: ${fmt(depth)}`);
+            gcode.push(`; Tool D: ${fmt(toolD)}mm, Tool Center Path Radius: ${fmt(pathR)}mm`);
+            gcode.push(`; Stepdown: ${fmt(stepDown)}mm`);
+            gcode.push(`; Work Zero: Center (X0, Y0)`);
+            gcode.push(`; --- START PREAMBLE ---`);
+            gcode.push(`G21 ; Set units to millimeters`);
+            gcode.push(`G90 ; Set to absolute positioning`);
+            gcode.push(`G17 ; Select XY plane`);
+            gcode.push(`G0 X0 Y0 ; Go to Work Zero (Center)`);
+            gcode.push(`G0 Z${fmt(maxZSafe)} ; Lift to maximum safe height`);
+            gcode.push(`M3 S10000 ; Start spindle (ADJUST S-VALUE)`);
+            gcode.push(`F${fmt(feedRate)} ; Set XY cutting feed rate`);
+            gcode.push(`G0 X${fmt(pathR)} Y0 Z${fmt(safetyZ)} ; Rapid to start of cutout path at safety height`);
+            gcode.push(`; --- END PREAMBLE ---`);
+
+            let currentZ = 0.0;
+            let passCount = 0;
+
+            // 3.2 Z-Axis (Depth) Loop
+            while (currentZ > depth + 0.001) {
+                passCount++;
+                currentZ -= stepDown;
+
+                // Clamp Z to the final depth
+                if (currentZ < depth) {
+                    currentZ = depth;
+                }
+
+                gcode.push(`\n; === Z PASS ${passCount}: Depth Z${fmt(currentZ)} ===`);
+
+                // 2. **Plunge to the current cutting depth**
+                gcode.push(`G1 Z${fmt(currentZ)} F${fmt(plungeRate)} ; Plunge to cutting depth`);
+
+                // 3. **Cut the full circle counter-clockwise (G3)**
+                // Center is (0,0), Start is (pathR, 0). I = 0 - pathR, J = 0.
+                gcode.push(`G3 X${fmt(pathR)} Y0 I${fmt(-pathR)} J0 F${fmt(feedRate)} ; Cut Full Circle CCW`);
+
+                // gcode.push(`G0 X0 Y0 ; Move back to center at Z_MAX_SAFE for next plunge/finish`);
+
+                // Break the Z loop if we hit the final depth
+                if (Math.abs(currentZ - depth) < 0.001) {
+                    break;
+                }
+            }
+
+            // 3.3 Postamble (Only stop spindle and end program are needed)
+            gcode.push(`\n; --- START POSTAMBLE ---`);
+            // 4. **Retract to Safe Z
+            gcode.push(`G0 Z${fmt(maxZSafe)} ; Retract to Z_MAX_SAFE (End of Z Pass)`);
+            // Z and XY should already be at G0 Z_maxSafe X0 Y0 from the last loop iteration.
+            gcode.push(`M5 ; Stop spindle`);
+            gcode.push(`M2 ; Program end`);
+            gcode.push(`; --- END POSTAMBLE ---`);
+
+            const finalGCode = gcode.join('\n');
+            output.value = finalGCode;
+
+            // --- 4. Automatic Download ---
+            const blob = new Blob([finalGCode], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `grbl_circle_cutout_D${diameter}_Z${Math.abs(depth).toFixed(1)}.gcode`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

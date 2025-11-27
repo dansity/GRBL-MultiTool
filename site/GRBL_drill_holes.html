@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC Drilling Path G-Code Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#ca8a04', /* Drilling/Milling Gold */
+                        'secondary': '#4f46e5',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for better aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .input-group label {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+            display: block;
+            font-size: 0.875rem; /* text-sm */
+        }
+        .input-group input, .input-group textarea {
+            border: 1px solid #d1d5db;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+            transition: border-color 0.2s;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #ca8a04;
+            box-shadow: 0 0 0 1px #ca8a04;
+        }
+        .btn-primary {
+            background-color: #ca8a04;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background-color: #a16207;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .gcode-output {
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.75rem; /* text-xs */
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
+        <h1 class="text-3xl font-bold text-center text-primary mb-6">CNC Drilling Path G-Code Generator</h1>
+        <p class="text-center text-gray-600 mb-8">Generates G-Code (G81/G73 emulation) for drilling multiple holes with optional chip-clearing pecker cycle.</p>
+
+        <img src="drilling.png" width="70%" style="display: block; margin-left: auto; margin-right: auto;"></img>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Panel -->
+            <div class="space-y-6">
+                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Drilling Parameters</h2>
+
+                <!-- Fixed Parameters -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <label for="plungeDepth">Plunge Depth (Z-, mm)</label>
+                        <input type="number" id="plungeDepth" value="5.0" min="0.1" step="0.1" required>
+                        <p class="text-xs text-gray-500 mt-1">Total depth to drill.</p>
+                    </div>
+                    <div class="input-group">
+                        <label for="plungeSpeed">Plunge Speed (F, mm/min)</label>
+                        <input type="number" id="plungeSpeed" value="800" min="10" step="10" required>
+                        <p class="text-xs text-gray-500 mt-1">Feed rate for G1 moves.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <label for="dwellTime">Dwell on Bottom (ms)</label>
+                        <input type="number" id="dwellTime" value="0" min="0" step="100" required>
+                        <p class="text-xs text-gray-500 mt-1">G4 time in milliseconds (0 for none).</p>
+                    </div>
+                    <div class="input-group">
+                        <label for="safeZ">Safe Z Clearance (mm)</label>
+                        <input type="number" id="safeZ" value="2.0" min="0.1" step="0.1" required>
+                        <p class="text-xs text-gray-500 mt-1">Z height for rapid moves (G0).</p>
+                    </div>
+                </div>
+
+                <!-- Pecking Controls -->
+                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+                    <input type="checkbox" id="peckerDrilling" class="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
+                    <label for="peckerDrilling" class="text-sm font-medium text-gray-700 select-none cursor-pointer">Enable Pecker Drilling (G0 Z-Clearance)</label>
+                </div>
+
+                <div id="peckField" class="input-group hidden">
+                    <label for="numPecks">Number of Pecks</label>
+                    <input type="number" id="numPecks" value="5" min="2" step="1">
+                    <p class="text-xs text-gray-500 mt-1">Total Plunge Depth is divided by this number. Minimum 2 pecks.</p>
+                </div>
+
+                <!-- Drill Locations -->
+                <div class="input-group">
+                    <label for="drillLocations">Drill Hole Locations (X,Y)</label>
+                    <textarea id="drillLocations" rows="6" placeholder="Format: X0,Y0 (one per line)" class="gcode-output">X10,Y10
+X50,Y10
+X50,Y50
+X10,Y50</textarea>
+                    <p class="text-xs text-gray-500 mt-1">Enter X and Y coordinates separated by a comma (or space/tab).</p>
+                </div>
+
+                <div class="flex justify-center">
+                    <button id="generateBtn" class="btn-primary w-full md:w-auto flex items-center justify-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Generate & Download G-Code</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="space-y-6">
+                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Generated G-Code Preview</h2>
+                <div class="relative">
+                    <textarea id="gcodeOutput" rows="23" readonly class="w-full bg-gray-100 p-3 gcode-output text-gray-800 rounded-lg shadow-inner"></textarea>
+                    <div id="download-message" class="absolute bottom-3 left-3 text-xs text-green-700 font-semibold bg-green-100 px-2 py-1 rounded hidden">Download starting...</div>
+                </div>
+                <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const plungeDepthInput = document.getElementById('plungeDepth');
+        const plungeSpeedInput = document.getElementById('plungeSpeed');
+        const dwellTimeInput = document.getElementById('dwellTime');
+        const safeZInput = document.getElementById('safeZ');
+        const peckerDrillingCheckbox = document.getElementById('peckerDrilling');
+        const peckField = document.getElementById('peckField');
+        const numPecksInput = document.getElementById('numPecks');
+        const drillLocationsTextarea = document.getElementById('drillLocations');
+        const gcodeOutputTextarea = document.getElementById('gcodeOutput');
+        const generateBtn = document.getElementById('generateBtn');
+        const errorDiv = document.getElementById('error-message');
+        const downloadMessage = document.getElementById('download-message');
+
+        const fmt = (n) => n.toFixed(3);
+
+        // --- Event Listeners ---
+
+        peckerDrillingCheckbox.addEventListener('change', () => {
+            peckField.classList.toggle('hidden', !peckerDrillingCheckbox.checked);
+        });
+
+        generateBtn.addEventListener('click', () => {
+            // Generate G-Code and then trigger the download
+            const generatedCode = generateGCode();
+            if (generatedCode) {
+                triggerDownload(generatedCode);
+            }
+        });
+
+        // --- Utility Functions ---
+
+        function displayError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            gcodeOutputTextarea.value = message;
+        }
+
+        function clearError() {
+             errorDiv.classList.add('hidden');
+        }
+
+        function parseLocations(text) {
+            const lines = text.trim().split('\n').filter(line => line.trim() !== '');
+            const points = [];
+
+            lines.forEach(line => {
+                // Remove X/Y prefixes and split by comma, space, or tab
+                const cleanedLine = line.toUpperCase().replace(/X/g, '').replace(/Y/g, '').trim();
+                const parts = cleanedLine.split(/[\s,]+/).filter(p => p !== '');
+
+                if (parts.length >= 2) {
+                    const x = parseFloat(parts[0]);
+                    const y = parseFloat(parts[1]);
+                    if (!isNaN(x) && !isNaN(y)) {
+                        points.push({ x: fmt(x), y: fmt(y) });
+                    }
+                }
+            });
+
+            return points;
+        }
+
+        /**
+         * Generates the G-Code string based on inputs.
+         * @returns {string|null} The final G-Code string or null on validation failure.
+         */
+        function generateGCode() {
+            clearError();
+
+            const plungeDepth = parseFloat(plungeDepthInput.value);
+            const plungeSpeed = parseFloat(plungeSpeedInput.value);
+            const dwellTimeMs = parseInt(dwellTimeInput.value);
+            const safeZ = parseFloat(safeZInput.value);
+            const isPeckerDrilling = peckerDrillingCheckbox.checked;
+            const numPecks = isPeckerDrilling ? parseInt(numPecksInput.value) : 1;
+            const points = parseLocations(drillLocationsTextarea.value);
+
+            // --- Validation ---
+            if (isNaN(plungeDepth) || plungeDepth <= 0) { displayError("Plunge Depth must be a positive number."); return null; }
+            if (isNaN(plungeSpeed) || plungeSpeed <= 0) { displayError("Plunge Speed must be a positive number."); return null; }
+            if (isNaN(safeZ) || safeZ < 0) { displayError("Safe Z Clearance must be non-negative."); return null; }
+            if (points.length === 0) { displayError("No valid drill hole locations found. Please enter X,Y coordinates."); return null; }
+            if (isPeckerDrilling && (isNaN(numPecks) || numPecks < 2)) { displayError("Number of Pecks must be 2 or more for pecker drilling."); return null; }
+
+            // --- Calculation ---
+            const finalZ = -plungeDepth;
+            const Z_CLEARANCE = safeZ;
+
+            let gcode = [];
+
+            // --- Header/Initialization ---
+            gcode.push(`; --- CNC Drilling Path Generator G-Code ---`);
+            gcode.push(`; Plunge Depth: ${fmt(plungeDepth)}mm | Feed Rate: ${fmt(plungeSpeed)} mm/min`);
+            if (isPeckerDrilling) {
+                gcode.push(`; Peck Drilling Enabled: ${numPecks} pecks.`);
+            } else {
+                gcode.push(`; Standard Drilling (G81 cycle emulation).`);
+            }
+            gcode.push(`G90 G21 ; Absolute positioning, Metric units`);
+            gcode.push(`M03 S10000 ; Spindle On (Adjust S-value as needed)`);
+            gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Move to safe clearance Z`);
+            gcode.push(`F${fmt(plungeSpeed)} ; Set drilling feedrate`);
+            gcode.push(``);
+
+            // --- Drill Cycle Generation ---
+            points.forEach((p, index) => {
+                gcode.push(`; --- Hole ${index + 1}: X${p.x} Y${p.y} ---`);
+
+                // 1. Rapid move to XY location
+                gcode.push(`G0 X${p.x} Y${p.y}`);
+
+                // 2. Perform Drilling Operation (Standard or Pecker)
+
+                if (isPeckerDrilling) {
+                    const peckDepth = plungeDepth / numPecks;
+                    let currentZ = 0;
+
+                    for (let i = 1; i <= numPecks; i++) {
+                        // Calculate next target depth
+                        currentZ = i * peckDepth;
+
+                        // Clamp to the final depth on the last peck
+                        if (currentZ > plungeDepth) {
+                            currentZ = plungeDepth;
+                        }
+
+                        const Z_target = -currentZ;
+
+                        // Plunge to peck depth
+                        gcode.push(`G1 Z${fmt(Z_target)} F${fmt(plungeSpeed)} ; Peck ${i} of ${numPecks}`);
+
+                        // Retract to chip clear (Z=SAFE_Z)
+                        if (currentZ < plungeDepth) {
+                            gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Clear chips`);
+                            // Re-engage at current XY position
+                        }
+                    }
+                } else {
+                    // Standard single plunge
+                    gcode.push(`G1 Z${fmt(finalZ)} F${fmt(plungeSpeed)} ; Single Plunge`);
+                }
+
+                // 3. Dwell on bottom (if required)
+                if (dwellTimeMs > 0) {
+                    gcode.push(`G4 P${fmt(dwellTimeMs / 1000)} ; Dwell for ${dwellTimeMs}ms`);
+                }
+
+                // 4. Retract to safe Z
+                gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Retract to safe height`);
+                gcode.push(``);
+            });
+
+            // --- Footer ---
+            gcode.push(`; --- G-Code End ---`);
+            gcode.push(`M05 ; Stop Spindle`);
+            gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Final move to safe Z`);
+            gcode.push(`M30 ; Program End`);
+
+            const finalGCode = gcode.join('\n');
+            gcodeOutputTextarea.value = finalGCode;
+            return finalGCode;
+        }
+
+        /**
+         * Triggers a file download for the generated G-Code.
+         * @param {string} gcode Content of the G-Code file.
+         */
+        function triggerDownload(gcode) {
+            downloadMessage.classList.remove('hidden');
+
+            const plungeDepth = Math.abs(parseFloat(plungeDepthInput.value) || 0).toFixed(1);
+            const filename = `cnc_drill_D${plungeDepth}.gcode`;
+
+            const blob = new Blob([gcode], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            setTimeout(() => {
+                downloadMessage.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Initialize by generating code on load
+        window.onload = function() {
+            generateGCode();
+            // Ensure peck field state is correctly initialized based on checkbox
+            peckField.classList.toggle('hidden', !peckerDrillingCheckbox.checked);
+        };
+
+    </script>
+</body>
+</html>

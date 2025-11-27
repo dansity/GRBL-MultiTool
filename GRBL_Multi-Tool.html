@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRBL Multi-tool Landing Page</title>
+    <style>
+        /* Define a consistent accent color variable */
+        :root {
+            --accent-color: #ed4d38; /* A nice blue color */
+            --hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            --transition-time: 0.3s;
+        }
+
+        /* Basic Reset and Body Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 60px; /* Space for the fixed footer */
+            background-color: #f4f4f4;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #ffffff;
+            color: #333;
+            padding: 20px 0;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header img {
+            /* Style for the logo image */
+            height: 80px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            color: var(--accent-color);
+            /* Removed text-align: center which is now handled by Flexbox */
+        }
+
+        /* Description Area Styling */
+        .description-area {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .description-area p {
+            line-height: 1.6;
+            color: #555;
+        }
+
+        /* Main Content Grid Styling */
+        .content-grid {
+            max-width: 960px; /* 3 * 300px + spacing */
+            margin: 20px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        /* Thumbnail Container and Link Styling */
+        .thumbnail-container {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform var(--transition-time), box-shadow var(--transition-time);
+            text-align: center;
+            text-decoration: none; /* Remove underline from link */
+            display: block; /* Make the link fill the container */
+            color: inherit;
+        }
+
+        /* Hover Effect */
+        .thumbnail-container:hover {
+            transform: translateY(-5px); /* Slight lift */
+            box-shadow: var(--hover-shadow); /* More pronounced shadow */
+        }
+
+        .thumbnail-container img {
+            width: 200px; /* Match specified size */
+            height: 200px; /* Match specified size */
+            display: block;
+            background-color: white; /* Ensure white background */
+            object-fit: cover; /* Ensures image covers the area without distortion */
+        }
+
+        .thumbnail-container p {
+            padding: 10px;
+            margin: 0;
+            font-weight: bold;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+
+        /* Footer Styling */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: var(--accent-color);
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 0.9em;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Media Query for smaller screens (e.g., mobile) */
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2x3 grid on mobile */
+            }
+            .thumbnail-container img {
+                width: 100%; /* Make images fit container */
+                height: auto;
+            }
+            .content-grid {
+                max-width: 620px;
+            }
+        }
+        @media (max-width: 480px) {
+            .content-grid {
+                grid-template-columns: 1fr; /* 1x6 grid on very small screens */
+            }
+            .content-grid {
+                max-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <img src="site/icon_small.png" alt="GRBL Multi Tool"></img><h1>GRBL Multi-tool</h1>
+    </header>
+
+    <section class="description-area">
+        <p>Below is a collection of scripts that can be used to quickly generate gcode for basic CNC operations on machines with GRBL controller. Just like on the "big boy's machines" you can easily take off a bit of material or drill a few holes without opening any CAM software. Free, your's forever.</p>
+    </section>
+
+    <main class="content-grid">
+
+        <a href="site/GRBL_rectangle_pocket.html" class="thumbnail-container">
+            <img src="site/rectangle_pocket_thumb.png" alt="Rectangle Pocket">
+            <p>Rectangle Pocket</p>
+        </a>
+
+        <a href="site/GRBL_drill_holes.html" class="thumbnail-container">
+            <img src="site/drilling_thumb.png" alt="Drilling Holes">
+            <p>Drilling Holes</p>
+        </a>
+
+        <a href="site/GRBL_circular_pocket.html" class="thumbnail-container">
+            <img src="site/circle_pocket_thumb.png" alt="Circular Pocket">
+            <p>Circular Pocket</p>
+        </a>
+
+        <a href="site/GRBL_rectange_cutout.html" class="thumbnail-container">
+            <img src="site/rectangle_cutout_thumb.png" alt="Rectangle Cutout">
+            <p>Rectangle Cutout</p>
+        </a>
+
+        <a href="site/GRBL_circular_cutout.html" class="thumbnail-container">
+            <img src="site/circle_cutout_thumb.png" alt="Circular Cutout">
+            <p>Circular Cutout</p>
+        </a>
+
+        <a href="site/GRBL_facing.html" class="thumbnail-container">
+            <img src="site/facing_thumb.png" alt="Facing/Skimming">
+            <p>Facing/Skimming</p>
+        </a>
+
+    </main>
+
+    <footer class="footer">
+        2025 GRBL Multi-tool | GPL 2.0 License | <a href="https://github.com/dansity/GRBL-MultiTool">Project Github</a>
+    </footer>
+
+</body>
+</html>
