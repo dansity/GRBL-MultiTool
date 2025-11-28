@@ -19,6 +19,12 @@ If you download this project you accept this simple term.
 - Circle cutout
 - Drilling holes
 
+### MACHINE COMPATIBILITY
+The generated gcode is very basic in the sense that it only uses G0, G1, G3 operations.  
+Most machines can digest these so chances that you can run it on yours are high (regardless of the brand of the conroller).  
+Feel free to edit the javascript to match your machine, it is rather simplistic.
+
+### What's inside?
 Project is made using HTML and Javascript.  
 It will run on any device with a browser.  
 It will run without internet.  
