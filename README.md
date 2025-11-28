@@ -6,6 +6,10 @@ I wanted it to work like on "big guy's" machines where you have "canned cycles" 
 ### PROJECT IS METRIC
 However, you are more than welcome to remix it to imperial. Shouldn't be hard.
 
+### DISCLAIMER
+It is easy to crash your machine in a thousand ways. Please always do dry runs if you are not familiar with gcode. I cannot take responsibility for what your machine does with this gcode.  
+If you download this project you accept this simple term.
+
 ### Currently supported operations:
 
 - Facing / Skimming
