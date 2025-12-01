@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNC Drilling Path G-Code Generator</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'primary': '#ca8a04', /* Drilling/Milling Gold */
+                        'primary': '#ca8a04',
                         'secondary': '#4f46e5',
                     }
                 }
@@ -23,6 +22,9 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
+        }
+        .input-group {
+            position: relative; /* Crucial for popup positioning */
         }
         .input-group label {
             font-weight: 500;
@@ -64,6 +66,58 @@
             word-wrap: break-word;
             font-size: 0.75rem; /* text-xs */
         }
+
+        /* --- Popup Styles --- */
+        .popup {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            position: absolute;
+            z-index: 10;
+            top: 100%; 
+            left: 0;
+            margin-top: 5px;
+
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-width: 290px;
+            min-width: 290px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .input-group:hover .popup {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Popup Table Layout */
+        .popup-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .popup-table td:first-child {
+            width: 120px; 
+            padding-right: 10px;
+            vertical-align: top;
+        }
+        .popup-table td:last-child {
+            width: calc(100% - 120px); 
+            vertical-align: top;
+        }
+        .popup-table img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        .popup-text {
+            font-family: inherit;
+            font-size: 0.875rem;
+            color: #374151;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -72,24 +126,42 @@
         <h1 class="text-3xl font-bold text-center text-primary mb-6">CNC Drilling Path G-Code Generator</h1>
         <p class="text-center text-gray-600 mb-8">Generates G-Code (G81/G73 emulation) for drilling multiple holes with optional chip-clearing pecker cycle.</p>
 
-        <img src="drilling.png" width="70%" style="display: block; margin-left: auto; margin-right: auto;"></img>
+        <img src="drilling.png" width="70%" style="display: block; margin-left: auto; margin-right: auto;">
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Input Panel -->
             <div class="space-y-6">
                 <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Drilling Parameters</h2>
 
-                <!-- Fixed Parameters -->
                 <div class="grid grid-cols-2 gap-4">
                     <div class="input-group">
                         <label for="plungeDepth">Plunge Depth (Z-, mm)</label>
                         <input type="number" id="plungeDepth" value="5.0" min="0.1" step="0.1" required>
                         <p class="text-xs text-gray-500 mt-1">Total depth to drill.</p>
+                         <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Plunge Depth Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Plunge Depth (Z)</b> is the total desired depth of the drilled hole, specified as a positive value. It translates to a negative Z coordinate.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                     <div class="input-group">
                         <label for="plungeSpeed">Plunge Speed (F, mm/min)</label>
                         <input type="number" id="plungeSpeed" value="800" min="10" step="10" required>
                         <p class="text-xs text-gray-500 mt-1">Feed rate for G1 moves.</p>
+                         <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="plunge.jpg" style="object-fit: cover;" alt="Plunge Speed Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Plunge Speed (F)</b> is the speed (feed rate) at which the drill moves vertically (down) when cutting into the material.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -97,16 +169,35 @@
                     <div class="input-group">
                         <label for="dwellTime">Dwell on Bottom (ms)</label>
                         <input type="number" id="dwellTime" value="0" min="0" step="100" required>
-                        <p class="text-xs text-gray-500 mt-1">G4 time in milliseconds (0 for none).</p>
+                        <p class="text-xs text-gray-500 mt-1">Time in milliseconds (0 for none).</p>
+                         <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="dwell.jpg" style="object-fit: cover;" alt="Dwell Time Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Dwell Time (G4)</b> is a pause commanded at the bottom of the hole, to ensure the hole bottom is clear. Specified in milliseconds.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                     <div class="input-group">
                         <label for="safeZ">Safe Z Clearance (mm)</label>
                         <input type="number" id="safeZ" value="2.0" min="0.1" step="0.1" required>
                         <p class="text-xs text-gray-500 mt-1">Z height for rapid moves (G0).</p>
+                         <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="safety_height.jpg" style="object-fit: cover;" alt="Safe Z Clearance Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Safe Z Clearance</b> is the Z-height above the material used for rapid horizontal travel (G0) between holes or during chip clearing.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Pecking Controls -->
                 <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
                     <input type="checkbox" id="peckerDrilling" class="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
                     <label for="peckerDrilling" class="text-sm font-medium text-gray-700 select-none cursor-pointer">Enable Pecker Drilling (G0 Z-Clearance)</label>
@@ -115,10 +206,19 @@
                 <div id="peckField" class="input-group hidden">
                     <label for="numPecks">Number of Pecks</label>
                     <input type="number" id="numPecks" value="5" min="2" step="1">
-                    <p class="text-xs text-gray-500 mt-1">Total Plunge Depth is divided by this number. Minimum 2 pecks.</p>
+                    <p class="text-xs text-gray-500 mt-1">Minimum 2 pecks.</p>
+                    <div class="popup">
+                        <table class="popup-table">
+                            <tr>
+                                <td><img src="peck.jpg" style="object-fit: cover;" alt="Number of Pecks Diagram"></td>
+                                <td class="popup-text">
+                                    <b>Number of Pecks</b> divides the total plunge depth into equal segments. After each peck, the tool retracts to the top to clear chips.
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
 
-                <!-- Drill Locations -->
                 <div class="input-group">
                     <label for="drillLocations">Drill Hole Locations (X,Y)</label>
                     <textarea id="drillLocations" rows="6" placeholder="Format: X0,Y0 (one per line)" class="gcode-output">X10,Y10
@@ -126,6 +226,16 @@ X50,Y10
 X50,Y50
 X10,Y50</textarea>
                     <p class="text-xs text-gray-500 mt-1">Enter X and Y coordinates separated by a comma (or space/tab).</p>
+                    <div class="popup">
+                        <table class="popup-table">
+                            <tr>
+                                <td><img src="dummy_locations.jpg" style="object-fit: cover;" alt="Drill Locations Diagram"></td>
+                                <td class="popup-text">
+                                    <b>Drill Hole Locations</b> are the X and Y coordinates of the center of each hole, relative to the work zero (G90). Enter one coordinate pair per line.
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="flex justify-center">
@@ -139,7 +249,6 @@ X10,Y50</textarea>
                 </div>
             </div>
 
-            <!-- Output Panel -->
             <div class="space-y-6">
                 <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Generated G-Code Preview</h2>
                 <div class="relative">
