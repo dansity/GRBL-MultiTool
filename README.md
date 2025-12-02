@@ -32,8 +32,10 @@ It will not terrorize you for money.
 Its free, open and yours forever.  
 
 ### Lovely interface
-<img width="1298" height="873" alt="kép" src="https://github.com/user-attachments/assets/c761dd0d-a6fd-4ab5-b94f-ac6e05394347" />
-<img width="930" height="875" alt="kép" src="https://github.com/user-attachments/assets/e6655af7-b47e-44cf-887c-a8f2f5ced925" />
+<img width="1298" height="873" alt="kép" src="https://github.com/user-attachments/assets/c761dd0d-a6fd-4ab5-b94f-ac6e05394347" />  
+Now with tooltips:
+<img width="933" height="868" alt="image" src="https://github.com/user-attachments/assets/c489da74-5589-4d03-9f92-72ca9e861cbc" />
+
 
 
 

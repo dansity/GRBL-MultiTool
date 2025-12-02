@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRBL Rectangle Pocket G-Code Generator</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'primary': '#ca8a04', /* Pocketing/Milling Gold */
+                        'primary': '#ca8a04',
                         'secondary': '#4f46e5',
                     }
                 }
@@ -19,10 +18,12 @@
         }
     </script>
     <style>
-        /* Custom styles for better aesthetics */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
+        }
+        .input-group {
+            position: relative;
         }
         .input-group label {
             font-weight: 500;
@@ -56,6 +57,58 @@
         .btn-primary:active {
             transform: scale(0.98);
         }
+
+        /* Popup Styles */
+        .popup {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            position: absolute;
+            z-index: 10;
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-width: 290px;
+            min-width: 290px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .input-group:hover .popup {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Popup Table Layout */
+        .popup-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .popup-table td:first-child {
+            width: 120px;
+            padding-right: 10px;
+            vertical-align: top;
+        }
+        .popup-table td:last-child {
+            width: calc(100% - 120px);
+            vertical-align: top;
+        }
+        .popup-table img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        .popup-text {
+            font-family: inherit;
+            font-size: 0.875rem;
+            color: #374151;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -63,50 +116,146 @@
     <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
         <h1 class="text-3xl font-bold text-center text-primary mb-6">GRBL Square Pocket G-Code Generator</h1>
         <p class="text-center text-gray-600 mb-8">Generates G-Code for a rectangular pocket using an inward spiral toolpath. The tool remains entirely within the defined boundary.</p>
-
-        <img src="square-pocket.png" width="70%" style="display: block; margin-left: auto; margin-right: auto;"></img>
-
+        <table>
+        <tr>
+            <td><img src="square-pocket.png" width="90%" style="display: block; margin-left: auto; margin-right: auto;"></td>
+            <td><h1 class="text-1xl font-bold mb-0">Order of operations:</h1>
+                <ol class="list-decimal">
+                    <li>Zero the machine at the pocket corner.</li>
+                    <li>Tool will lift up and travel into the patch area.</li>
+                    <li>Tool will plunge into the material and cut inside perimeter.</li>
+                    <li>Once finishes it will lift up and travel to start position at safe height.</li>
+                </ol></td>
+        </tr>
+        </table>
         <div id="form-section" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- X and Y dimensions -->
             <div class="input-group">
                 <label for="maxX">Pocket Width (X, mm)</label>
                 <input type="number" id="maxX" value="50" min="1" step="0.1" required>
+                <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="pocket_width.jpg" style="object-fit: cover;" alt="Pocket Width Diagram"></td>
+                            <td class="popup-text">
+                                <b>Pocket Width (X)</b> defines the size of the pocket along the X-axis. This is the horizontal dimension in most standard CNC setups.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
             <div class="input-group">
                 <label for="maxY">Pocket Height (Y, mm)</label>
                 <input type="number" id="maxY" value="50" min="1" step="0.1" required>
+                 <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="pocket_height.jpg" style="object-fit: cover;" alt="Pocket Height Diagram"></td>
+                            <td class="popup-text">
+                                <b>Pocket Height (Y)</b> defines the size of the pocket along the Y-axis. This is the vertical dimension of the cut area.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
             <div class="input-group">
                 <label for="depth">Total Depth (Z, mm)</label>
                 <input type="number" id="depth" value="5.0" step="0.01" required>
+                 <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Total Depth Diagram"></td>
+                            <td class="popup-text">
+                                <b>Total Depth (Z)</b> is the final, negative Z-coordinate the tool will reach. This defines how deep the pocket will be.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
 
-            <!-- Tool and Step parameters -->
             <div class="input-group">
                 <label for="toolD">Tool Diameter (mm)</label>
                 <input type="number" id="toolD" value="6.0" min="0.1" step="0.1" required>
+                 <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="tool_dia.jpg" style="object-fit: cover;" alt="Tool Diameter Diagram"></td>
+                            <td class="popup-text">
+                                <b>Tool Diameter</b> is the width of the end mill used for cutting. The pocket size calculation depends heavily on this value.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
             <div class="input-group">
                 <label for="overlapP">Stepover (% of ToolD)</label>
                 <input type="number" id="overlapP" value="40" min="10" max="99" step="1" required>
+                 <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="stepover.jpg" style="object-fit: cover;" alt="Stepover Diagram"></td>
+                            <td class="popup-text">
+                                <b>Stepover</b> is the distance of the overlap with the next cutting pass, expressed as a percentage of the Tool Diameter.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
             <div class="input-group">
                 <label for="stepDown">Stepdown (Z, mm)</label>
                 <input type="number" id="stepDown" value="1.0" min="0.01" step="0.01" required>
+                 <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="step_down.jpg" style="object-fit: cover;" alt="Stepdown Diagram"></td>
+                            <td class="popup-text">
+                                <b>Stepdown (Z)</b> is the maximum depth the tool will cut in a single pass before retracting to start the next layer.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
 
-            <!-- Feed Rate and Safety Height -->
             <div class="input-group">
                 <label for="feedRate">Feed Rate (XY, mm/min)</label>
                 <input type="number" id="feedRate" value="800" min="1" step="10" required>
+                 <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="feedrate.jpg" style="object-fit: cover;" alt="Feed Rate Diagram"></td>
+                            <td class="popup-text">
+                                <b>Feed Rate (XY)</b> is the speed at which the tool moves horizontally during cutting operations. Use a lower rate for harder materials.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
             <div class="input-group">
                 <label for="plungeRate">Plunge Rate (Z, mm/min)</label>
                 <input type="number" id="plungeRate" value="200" min="1" step="10" required>
+                 <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="plunge.jpg" style="object-fit: cover;" alt="Plunge Rate Diagram"></td>
+                            <td class="popup-text">
+                                <b>Plunge Rate (Z)</b> is the speed at which the tool moves vertically (down) when entering the material for a new cutting layer.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
             <div class="input-group">
                 <label for="safetyZ">Safety Z Height (mm)</label>
                 <input type="number" id="safetyZ" value="5.0" min="1.0" step="0.1" required>
+                 <div class="popup">
+                    <table class="popup-table">
+                        <tr>
+                            <td><img src="safety_height.jpg" style="object-fit: cover;" alt="Safety Z Height Diagram"></td>
+                            <td class="popup-text">
+                                <b>Safety Z Height</b> is a clear height above the material that the tool uses when moving between non-cutting operations.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -128,7 +277,7 @@
         <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
     </div>
 
-    <script>
+<script>
         // Constants for coordinate systems and units
         const Z_CLEARANCE = 2.0; // Extra lift needed above safety Z when moving rapidly
 
@@ -138,49 +287,64 @@
         /**
          * Generates the cutting toolpath for a single Z level, using an inward rectangular spiral.
          * The tool center is always offset by toolR from the boundary.
+         * Returns the X, Y coordinates of the *last* point in the spiral path.
          */
         function generateSpiralToolpath(gcode, maxX, maxY, currentZ, stepover, feedRate, toolR) {
             let xMin = toolR;
             let yMin = toolR;
             let xMax = maxX - toolR;
             let yMax = maxY - toolR;
+            let lastX = 0;
+            let lastY = 0;
 
             // Check if the pocket is wider than the tool
             if (xMax < xMin || yMax < yMin) {
                  gcode.push(`; ERROR: POCKET DIMENSIONS TOO SMALL FOR TOOL RADIUS! (maxX=${maxX}, maxY=${maxY}, toolR=${toolR})`);
-                 return;
+                 return {x: xMin, y: yMin}; // Return the first corner as a fallback
             }
 
             let firstPass = true;
+            let stepOverDone = false; // Flag to ensure the first move is a rapid/plunge, not a step-over G1.
 
             // Spiral inwards until the path overlaps or crosses
             while (xMax >= xMin && yMax >= yMin) {
 
                 // 1. Move to the start point (bottom-left of the current rectangle)
                 if (firstPass) {
-                    // Rapid move to start point on the very first pass of this Z level
-                    gcode.push(`G0 X${fmt(xMin)} Y${fmt(yMin)} ; Rapid to start of spiral path (Tool center offset)`);
+                    // This initial move to the first spiral point (toolR, toolR) is handled *before* calling this function.
+                    // We just need to track the first pass.
                     firstPass = false;
+                    lastX = xMin;
+                    lastY = yMin;
                 } else {
                     // Linear move to start point (from the previous inner point)
                     // This diagonal move executes the step-over
                     gcode.push(`G1 X${fmt(xMin)} Y${fmt(yMin)} F${fmt(feedRate)} ; Step over and start new rectangle`);
+                    lastX = xMin;
+                    lastY = yMin;
                 }
 
                 // --- Cut the current rectangle boundary (Clockwise) ---
 
                 // 2. Bottom edge: Left to Right (X Min -> X Max)
                 gcode.push(`G1 X${fmt(xMax)} F${fmt(feedRate)}`);
+                lastX = xMax;
+                lastY = yMin;
 
                 // 3. Right edge: Bottom to Top (Y Min -> Y Max)
                 gcode.push(`G1 Y${fmt(yMax)}`);
+                lastX = xMax;
+                lastY = yMax;
 
                 // 4. Top edge: Right to Left (X Max -> X Min)
                 gcode.push(`G1 X${fmt(xMin)}`);
+                lastX = xMin;
+                lastY = yMax;
 
                 // 5. Left edge: Top to Bottom (Y Max -> Y Min)
-                // FIX: Added this line to complete the square perimeter before stepping over.
                 gcode.push(`G1 Y${fmt(yMin)}`);
+                lastX = xMin;
+                lastY = yMin;
 
                 // 6. Step over inward for the next loop
                 xMin += stepover;
@@ -196,7 +360,11 @@
                 let centerX = maxX / 2;
                 let centerY = maxY / 2;
                 gcode.push(`G1 X${fmt(centerX)} Y${fmt(centerY)} F${fmt(feedRate)} ; Final move to center point`);
+                lastX = centerX;
+                lastY = centerY;
             }
+
+            return {x: lastX, y: lastY};
         }
 
 
@@ -224,6 +392,9 @@
             const toolR = toolD / 2.0;
             const stepover = toolD * (overlapP / 100);
             const maxZSafe = safetyZ + Z_CLEARANCE;
+            // The starting point for the spiral, which is toolR away from the boundary X0, Y0
+            const startX = toolR;
+            const startY = toolR;
 
             // Convert depth to a negative value if it's positive (milling down)
             depth = -Math.abs(depth);
@@ -244,6 +415,11 @@
                 errorDiv.classList.remove('hidden');
                 return;
             }
+             if (maxX < startX * 2 || maxY < startY * 2) {
+                 errorDiv.textContent = `Pocket size (X=${maxX}, Y=${maxY}) is too small for tool center offset (ToolR=${toolR}).`;
+                 errorDiv.classList.remove('hidden');
+                 return;
+             }
 
             // --- 3. G-Code Generation ---
             let gcode = [];
@@ -259,14 +435,25 @@
             gcode.push(`G21 ; Set units to millimeters`);
             gcode.push(`G90 ; Set to absolute positioning`);
             gcode.push(`M3 S10000 ; Start spindle (ADJUST S-VALUE FOR YOUR SPINDLE)`);
-            gcode.push(`G0 Z${fmt(maxZSafe)} ; Lift to maximum safe height`);
-            gcode.push(`G0 X0 Y0 ; Go to starting corner (Work Zero)`);
-            gcode.push(`G0 Z${fmt(safetyZ)} ; Move to safety height`);
+
+            // **NEW: Start at X0 Y0 (corner of pocket) at Z=0**
+            gcode.push(`G0 X0 Y0 Z0 ; Start at the pocket corner (Work Zero, Z0)`);
+
+            // **NEW: Lift to safe height**
+            gcode.push(`G0 Z${fmt(maxZSafe)} ; Lift to maximum safe height for travel`);
+
+            // **NEW: Travel to first spiral point**
+            gcode.push(`G0 X${fmt(startX)} Y${fmt(startY)} ; Travel to the first spiral point (Tool Center Offset)`);
+            gcode.push(`G0 Z${fmt(safetyZ)} ; Move to safety height (ready to plunge)`);
+
             gcode.push(`F${fmt(feedRate)} ; Set XY cutting feed rate`);
             gcode.push(`; --- END PREAMBLE ---`);
 
             let currentZ = 0.0;
             let passCount = 0;
+            // The position (X, Y) after the previous spiral is completed.
+            // Initialized to the start point (Tool Center Offset) as the first spiral starts there.
+            let lastSpiralPosition = {x: startX, y: startY};
 
             // 3.2 Z-Axis (Depth) Loop
             while (currentZ > depth - 0.001) { // -0.001 tolerance for floating point
@@ -280,17 +467,29 @@
 
                 gcode.push(`\n; === Z PASS ${passCount}: Depth Z${fmt(currentZ)} ===`);
 
-                // 1. Move back to the starting corner (X0, Y0)
-                gcode.push(`G0 X0 Y0 ; Return to Work Zero`);
+                // 1. **Travel to the start of the spiral for this pass.**
+                // The position after the previous pass was the 'lastSpiralPosition' at Z=safetyZ.
+                // We are already at this position, but this move ensures we're ready.
+                if (passCount > 1) {
+                    // **NEW: Lift up, travel, then plunge.**
 
-                // 2. Plunge to the current cutting depth
+                    // Already at Z=safetyZ from the end of the previous pass's retract.
+
+                    // We need to return to the *starting* point of the spiral for the next depth cut,
+                    // which is always (toolR, toolR).
+                    gcode.push(`G0 X${fmt(startX)} Y${fmt(startY)} ; Rapid to start of next spiral pass (Tool Center Offset)`);
+                }
+
+                // 2. **Plunge to the current cutting depth**
                 gcode.push(`G1 Z${fmt(currentZ)} F${fmt(plungeRate)} ; Plunge to cutting depth`);
 
-                // 3. Generate the spiral toolpath
-                generateSpiralToolpath(gcode, maxX, maxY, currentZ, stepover, feedRate, toolR);
+                // 3. **Generate the spiral toolpath**
+                // The generateSpiralToolpath function is designed to start the cutting immediately
+                // from the current X/Y/Z position. It no longer contains the initial G0 X/Y move.
+                lastSpiralPosition = generateSpiralToolpath(gcode, maxX, maxY, currentZ, stepover, feedRate, toolR);
 
-                // 4. Retract slightly (within the pocket area)
-                gcode.push(`G0 Z${fmt(safetyZ)} ; Retract to safety height`);
+                // 4. **Retract to safety height**
+                gcode.push(`G0 Z${fmt(safetyZ)} ; Lift to safety height (for travel to next pass start)`);
 
                 // Break the Z loop if we hit the final depth
                 if (currentZ === depth) {
@@ -300,8 +499,13 @@
 
             // 3.3 Postamble
             gcode.push(`\n; --- START POSTAMBLE ---`);
+
+            // **NEW: Lift to max safe height (Already at safetyZ from last step)**
             gcode.push(`G0 Z${fmt(maxZSafe)} ; Lift to max safe height for travel`);
-            gcode.push(`G0 X0 Y0 ; Return to Work Zero`);
+
+            // **NEW: Travel to Work Zero (X0, Y0) but DO NOT PLUNGE Z0**
+            gcode.push(`G0 X0 Y0 ; Return to Work Zero (X0, Y0)`);
+
             gcode.push(`M5 ; Stop spindle`);
             gcode.push(`M2 ; Program end (Standard GRBL/G-Code End)`);
             gcode.push(`; --- END POSTAMBLE ---`);
