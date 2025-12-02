@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNC Drilling Path G-Code Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import * as GCodePreview from "https://esm.sh/gcode-preview@3.0.0-alpha.3";
+        
+        // Define the preview instance globally or attach it to the window object
+        // so it can be accessed by the main script block.
+        window.GCodePreviewInstance = new GCodePreview.init({
+            // The canvas element ID will be resolved later in the main script
+            // Or we will configure it directly in the main script block where the DOM is ready.
+        });
+    </script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -24,14 +35,14 @@
             background-color: #f3f4f6;
         }
         .input-group {
-            position: relative; /* Crucial for popup positioning */
+            position: relative; 
         }
         .input-group label {
             font-weight: 500;
             color: #374151;
             margin-bottom: 4px;
             display: block;
-            font-size: 0.875rem; /* text-sm */
+            font-size: 0.875rem; 
         }
         .input-group input, .input-group textarea {
             border: 1px solid #d1d5db;
@@ -60,14 +71,50 @@
         .btn-primary:active {
             transform: scale(0.98);
         }
+        .btn-secondary { /* New style for Preview button */
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-secondary:hover {
+            background-color: #4338ca;
+        }
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
         .gcode-output {
             font-family: monospace;
             white-space: pre-wrap;
             word-wrap: break-word;
-            font-size: 0.75rem; /* text-xs */
+            font-size: 0.75rem; 
         }
 
-        /* --- Popup Styles --- */
+        /* --- Accordion Styles --- */
+        .accordion-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background-color: #f9fafb; 
+            border-radius: 0 0 8px 8px;
+        }
+        .accordion-content.active {
+            max-height: 500px; 
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            padding: 1rem;
+        }
+
+        /* --- Popup Styles (existing, kept for completeness) --- */
         .popup {
             visibility: hidden;
             opacity: 0;
@@ -118,6 +165,16 @@
             color: #374151;
             line-height: 1.4;
         }
+        /* Style for the GCode viewer container to ensure proper height */
+        #gcodeViewerContainer {
+            height: 300px;
+            position: relative;
+        }
+        /* Style the canvas for 3D view */
+        #gcodeCanvas {
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -137,31 +194,31 @@
                         <label for="plungeDepth">Plunge Depth (Z-, mm)</label>
                         <input type="number" id="plungeDepth" value="5.0" min="0.1" step="0.1" required>
                         <p class="text-xs text-gray-500 mt-1">Total depth to drill.</p>
-                         <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Plunge Depth Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Plunge Depth (Z)</b> is the total desired depth of the drilled hole, specified as a positive value. It translates to a negative Z coordinate.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+                           <div class="popup">
+                               <table class="popup-table">
+                                   <tr>
+                                       <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Plunge Depth Diagram"></td>
+                                       <td class="popup-text">
+                                           <b>Plunge Depth (Z)</b> is the total desired depth of the drilled hole, specified as a positive value. It translates to a negative Z coordinate.
+                                       </td>
+                                   </tr>
+                               </table>
+                           </div>
                     </div>
                     <div class="input-group">
                         <label for="plungeSpeed">Plunge Speed (F, mm/min)</label>
                         <input type="number" id="plungeSpeed" value="800" min="10" step="10" required>
                         <p class="text-xs text-gray-500 mt-1">Feed rate for G1 moves.</p>
-                         <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="plunge.jpg" style="object-fit: cover;" alt="Plunge Speed Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Plunge Speed (F)</b> is the speed (feed rate) at which the drill moves vertically (down) when cutting into the material.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+                           <div class="popup">
+                               <table class="popup-table">
+                                   <tr>
+                                       <td><img src="plunge.jpg" style="object-fit: cover;" alt="Plunge Speed Diagram"></td>
+                                       <td class="popup-text">
+                                           <b>Plunge Speed (F)</b> is the speed (feed rate) at which the drill moves vertically (down) when cutting into the material.
+                                       </td>
+                                   </tr>
+                               </table>
+                           </div>
                     </div>
                 </div>
 
@@ -170,31 +227,31 @@
                         <label for="dwellTime">Dwell on Bottom (ms)</label>
                         <input type="number" id="dwellTime" value="0" min="0" step="100" required>
                         <p class="text-xs text-gray-500 mt-1">Time in milliseconds (0 for none).</p>
-                         <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="dwell.jpg" style="object-fit: cover;" alt="Dwell Time Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Dwell Time (G4)</b> is a pause commanded at the bottom of the hole, to ensure the hole bottom is clear. Specified in milliseconds.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+                           <div class="popup">
+                               <table class="popup-table">
+                                   <tr>
+                                       <td><img src="dwell.jpg" style="object-fit: cover;" alt="Dwell Time Diagram"></td>
+                                       <td class="popup-text">
+                                           <b>Dwell Time (G4)</b> is a pause commanded at the bottom of the hole, to ensure the hole bottom is clear. Specified in milliseconds.
+                                       </td>
+                                   </tr>
+                               </table>
+                           </div>
                     </div>
                     <div class="input-group">
                         <label for="safeZ">Safe Z Clearance (mm)</label>
                         <input type="number" id="safeZ" value="2.0" min="0.1" step="0.1" required>
                         <p class="text-xs text-gray-500 mt-1">Z height for rapid moves (G0).</p>
-                         <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="safety_height.jpg" style="object-fit: cover;" alt="Safe Z Clearance Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Safe Z Clearance</b> is the Z-height above the material used for rapid horizontal travel (G0) between holes or during chip clearing.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+                           <div class="popup">
+                               <table class="popup-table">
+                                   <tr>
+                                       <td><img src="safety_height.jpg" style="object-fit: cover;" alt="Safe Z Clearance Diagram"></td>
+                                       <td class="popup-text">
+                                           <b>Safe Z Clearance</b> is the Z-height above the material used for rapid horizontal travel (G0) between holes or during chip clearing.
+                                       </td>
+                                   </tr>
+                               </table>
+                           </div>
                     </div>
                 </div>
 
@@ -238,29 +295,55 @@ X10,Y50</textarea>
                     </div>
                 </div>
 
-                <div class="flex justify-center">
-                    <button id="generateBtn" class="btn-primary w-full md:w-auto flex items-center justify-center space-x-2">
+                <div class="flex justify-center space-x-4">
+                    <button id="generateDownloadBtn" class="btn-primary w-full md:w-auto flex items-center justify-center space-x-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
                             <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
                         </svg>
-                        <span>Generate & Download G-Code</span>
+                        <span>Generate & Download</span>
+                    </button>
+                    <button id="generatePreviewBtn" class="btn-secondary w-full md:w-auto flex items-center justify-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Generate & Preview</span>
                     </button>
                 </div>
             </div>
 
             <div class="space-y-6">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Generated G-Code Preview</h2>
-                <div class="relative">
-                    <textarea id="gcodeOutput" rows="23" readonly class="w-full bg-gray-100 p-3 gcode-output text-gray-800 rounded-lg shadow-inner"></textarea>
-                    <div id="download-message" class="absolute bottom-3 left-3 text-xs text-green-700 font-semibold bg-green-100 px-2 py-1 rounded hidden">Download starting...</div>
+                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">G-Code Visualization and Preview</h2>
+                
+                <div id="gcodeViewerContainer" class="bg-gray-200 border border-gray-300 rounded-lg shadow-inner flex items-center justify-center">
+                    <canvas id="gcodeCanvas" style="width: 100%; height: 100%;"></canvas>
+                    <p id="viewerPlaceholder" class="text-gray-500 text-center p-4 absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">Click "Generate & Preview" to load the G-Code visualization here.</p>
+                </div>
+
+                <div class="border border-gray-300 rounded-lg shadow-sm">
+                    <div id="accordionHeader" class="accordion-header p-3 bg-gray-100 rounded-t-lg">
+                        <span class="text-base font-semibold text-gray-700">Raw Generated G-Code</span>
+                        <svg id="accordionIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transform transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div id="accordionContent" class="accordion-content">
+                        <div class="relative">
+                            <textarea id="gcodeOutput" rows="15" readonly class="w-full bg-gray-100 p-3 gcode-output text-gray-800 rounded-lg shadow-inner"></textarea>
+                            <div id="download-message" class="absolute bottom-3 left-3 text-xs text-green-700 font-semibold bg-green-100 px-2 py-1 rounded hidden">Download starting...</div>
+                        </div>
+                    </div>
                 </div>
                 <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
             </div>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        // Import the GCodePreview library using the alpha version
+        import * as GCodePreview from "https://esm.sh/gcode-preview";
+
         // DOM Elements
         const plungeDepthInput = document.getElementById('plungeDepth');
         const plungeSpeedInput = document.getElementById('plungeSpeed');
@@ -271,11 +354,51 @@ X10,Y50</textarea>
         const numPecksInput = document.getElementById('numPecks');
         const drillLocationsTextarea = document.getElementById('drillLocations');
         const gcodeOutputTextarea = document.getElementById('gcodeOutput');
-        const generateBtn = document.getElementById('generateBtn');
+        const generateDownloadBtn = document.getElementById('generateDownloadBtn'); 
+        const generatePreviewBtn = document.getElementById('generatePreviewBtn'); 
         const errorDiv = document.getElementById('error-message');
         const downloadMessage = document.getElementById('download-message');
+        const accordionHeader = document.getElementById('accordionHeader');
+        const accordionContent = document.getElementById('accordionContent');
+        const accordionIcon = document.getElementById('accordionIcon');
+        const gcodeCanvas = document.getElementById('gcodeCanvas');
+        const viewerPlaceholder = document.getElementById('viewerPlaceholder');
 
         const fmt = (n) => n.toFixed(3);
+
+        // --- GCodePreview Initialization ---
+        // Initialize the viewer instance once, attaching it to the canvas.
+        const preview = new GCodePreview.init({
+            canvas: gcodeCanvas,
+            lineWidth: 5,
+            lineHeight: 1,
+            renderTravel: true,
+            renderExtrusion: true, // Keep extrusion for visual path differentiation
+            renderTubes: false,
+            buildVolume: {
+              x: 200, // Based on dummy data, set a reasonable size
+              y: 200
+            }
+        });
+        // Initial clearing to show only the background/placeholder until preview is clicked
+        preview.clear(); 
+        // --- End GCodePreview Initialization ---
+
+
+        // --- Accordion Logic (Moved to this module script for cleaner access) ---
+        accordionHeader.addEventListener('click', () => {
+            const isCollapsed = !accordionContent.classList.contains('active');
+            
+            accordionContent.classList.toggle('active');
+
+            if (isCollapsed) {
+                accordionIcon.classList.add('rotate-180');
+                accordionContent.style.maxHeight = accordionContent.scrollHeight + "px";
+            } else {
+                accordionIcon.classList.remove('rotate-180');
+                accordionContent.style.maxHeight = "0";
+            }
+        });
 
         // --- Event Listeners ---
 
@@ -283,11 +406,17 @@ X10,Y50</textarea>
             peckField.classList.toggle('hidden', !peckerDrillingCheckbox.checked);
         });
 
-        generateBtn.addEventListener('click', () => {
-            // Generate G-Code and then trigger the download
+        generateDownloadBtn.addEventListener('click', () => {
             const generatedCode = generateGCode();
             if (generatedCode) {
                 triggerDownload(generatedCode);
+            }
+        });
+
+        generatePreviewBtn.addEventListener('click', () => { 
+            const generatedCode = generateGCode();
+            if (generatedCode) {
+                streamGCodeToViewer(generatedCode);
             }
         });
 
@@ -308,7 +437,6 @@ X10,Y50</textarea>
             const points = [];
 
             lines.forEach(line => {
-                // Remove X/Y prefixes and split by comma, space, or tab
                 const cleanedLine = line.toUpperCase().replace(/X/g, '').replace(/Y/g, '').trim();
                 const parts = cleanedLine.split(/[\s,]+/).filter(p => p !== '');
 
@@ -320,12 +448,12 @@ X10,Y50</textarea>
                     }
                 }
             });
-
             return points;
         }
 
         /**
          * Generates the G-Code string based on inputs.
+         * (Same logic as before, just included here for completeness)
          * @returns {string|null} The final G-Code string or null on validation failure.
          */
         function generateGCode() {
@@ -380,27 +508,21 @@ X10,Y50</textarea>
                     let currentZ = 0;
 
                     for (let i = 1; i <= numPecks; i++) {
-                        // Calculate next target depth
                         currentZ = i * peckDepth;
 
-                        // Clamp to the final depth on the last peck
                         if (currentZ > plungeDepth) {
                             currentZ = plungeDepth;
                         }
 
                         const Z_target = -currentZ;
 
-                        // Plunge to peck depth
                         gcode.push(`G1 Z${fmt(Z_target)} F${fmt(plungeSpeed)} ; Peck ${i} of ${numPecks}`);
 
-                        // Retract to chip clear (Z=SAFE_Z)
                         if (currentZ < plungeDepth) {
                             gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Clear chips`);
-                            // Re-engage at current XY position
                         }
                     }
                 } else {
-                    // Standard single plunge
                     gcode.push(`G1 Z${fmt(finalZ)} F${fmt(plungeSpeed)} ; Single Plunge`);
                 }
 
@@ -426,8 +548,7 @@ X10,Y50</textarea>
         }
 
         /**
-         * Triggers a file download for the generated G-Code.
-         * @param {string} gcode Content of the G-Code file.
+         * Triggers a file download.
          */
         function triggerDownload(gcode) {
             downloadMessage.classList.remove('hidden');
@@ -451,11 +572,33 @@ X10,Y50</textarea>
             }, 3000);
         }
 
+        /**
+         * Loads G-Code into the GCodePreview viewer.
+         * @param {string} gcode Content of the G-Code file.
+         */
+        function streamGCodeToViewer(gcode) {
+            // Hide placeholder text and ensure canvas is visible
+            viewerPlaceholder.style.display = 'none';
+            gcodeCanvas.style.display = 'block';
+
+            // Clear any previous render and load the new G-Code
+            preview.clear();
+            preview.processGCode(gcode);
+            
+            // You may want to center the view after processing:
+            preview.render();
+            preview.center(); 
+        }
+
         // Initialize by generating code on load
         window.onload = function() {
             generateGCode();
-            // Ensure peck field state is correctly initialized based on checkbox
             peckField.classList.toggle('hidden', !peckerDrillingCheckbox.checked);
+
+            // Set a default max-height for the accordion content to zero (collapsed)
+            accordionContent.style.maxHeight = "0";
+            accordionContent.classList.remove('active'); 
+            accordionIcon.classList.remove('rotate-180');
         };
 
     </script>
