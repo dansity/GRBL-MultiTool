@@ -27,9 +27,16 @@ Feel free to edit the javascript to match your machine, it is rather simplistic.
 ### What's inside?
 Project is made using HTML and Javascript.  
 It will run on any device with a browser.  
-It will run without internet.  
+It will run without internet**.  
 It will not terrorize you for money.  
 Its free, open and yours forever.  
+
+**The project will run without internet, however some styling elements are downloaded on the fly.  
+Without internet connection you will not see the 3D preview and may miss some fonts and such. Will still work tho.
+
+### What external libraries used?
+3D viewer: https://github.com/xyz-tools/gcode-preview  
+CSS and Styling: tailwindcss.com
 
 ### Lovely interface
 <img width="1298" height="873" alt="kép" src="https://github.com/user-attachments/assets/c761dd0d-a6fd-4ab5-b94f-ac6e05394347" />  
