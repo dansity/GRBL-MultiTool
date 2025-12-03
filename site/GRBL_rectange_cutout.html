@@ -4,9 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRBL Square Cutout G-Code Generator</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <script type="module">
+        import * as GCodePreview from "https://esm.sh/gcode-preview";
+
+        // Expose GCodePreview globally so it can be accessed by the main script
+        window.GCodePreview = GCodePreview;
+    </script>
+
     <script>
+        // Custom Tailwind Configuration
         tailwind.config = {
             theme: {
                 extend: {
@@ -19,10 +27,13 @@
         }
     </script>
     <style>
-        /* Custom styles for better aesthetics */
+        /* Custom styles for consistency and aesthetics */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
+        }
+        .input-group {
+            position: relative;
         }
         .input-group label {
             font-weight: 500;
@@ -39,11 +50,12 @@
         }
         .input-group input:focus, .input-group textarea:focus {
             outline: none;
-            border-color: #dc2626; /* Updated focus color */
+            border-color: #dc2626; /* Primary color focus */
             box-shadow: 0 0 0 1px #dc2626;
         }
+        /* Primary Button (Red for Cutout) */
         .btn-primary {
-            background-color: #dc2626; /* Updated button color */
+            background-color: #dc2626;
             color: white;
             padding: 10px 20px;
             border-radius: 8px;
@@ -51,63 +63,265 @@
             transition: background-color 0.2s, transform 0.1s;
         }
         .btn-primary:hover {
-            background-color: #991b1b; /* Darker red on hover */
+            background-color: #991b1b;
         }
         .btn-primary:active {
             transform: scale(0.98);
+        }
+         /* Secondary Button (Grey for Preview) */
+        .btn-secondary {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            border: 1px solid #d1d5db;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-secondary:hover {
+            background-color: #e5e7eb;
+        }
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+
+        /* Popup Styles (Copied from example) */
+        .popup {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            position: absolute;
+            z-index: 10;
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-width: 290px;
+            min-width: 290px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .input-group:hover .popup {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Popup Table Layout (Copied from example) */
+        .popup-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .popup-table td:first-child {
+            width: 120px;
+            padding-right: 10px;
+            vertical-align: top;
+        }
+        .popup-table td:last-child {
+            width: calc(100% - 120px);
+            vertical-align: top;
+        }
+        .popup-table img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        .popup-text {
+            font-family: inherit;
+            font-size: 0.875rem;
+            color: #374151;
+            line-height: 1.4;
+        }
+
+        /* 3D View Styling (Copied from example) */
+        #cnc-3d-view {
+            height: 300px;
+            background-color: #d3d3d3;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #dc2626; /* Updated border color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Ensure the canvas element fills the container */
+        #gcode-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
+    <div class="max-w-6xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
         <h1 class="text-3xl font-bold text-center text-primary mb-6">GRBL Square Cutout G-Code Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Generates G-Code for a rectangular cutout. After start the tool moves up and moves outside to cut around the perimeter.</p>
+        <p class="text-center text-gray-600 mb-8">Generates G-Code for a rectangular cutout. The tool center is offset **outside** the defined boundary.</p>
+        <img src="rect_cutout.png" width="50%" class="mx-auto block" alt="Rectangular Cutout Diagram">
 
-        <img src="rect_cutout.png" width="70%" style="display: block; margin-left: auto; margin-right: auto;"></img>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 mt-6">
 
-        <div id="form-section" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- X and Y dimensions -->
-            <div class="input-group">
-                <label for="maxX">Cutout Width (X, mm)</label>
-                <input type="number" id="maxX" value="50" min="1" step="0.1" required>
-            </div>
-            <div class="input-group">
-                <label for="maxY">Cutout Height (Y, mm)</label>
-                <input type="number" id="maxY" value="50" min="1" step="0.1" required>
-            </div>
-            <div class="input-group">
-                <label for="depth">Total Depth (Z, mm)</label>
-                <input type="number" id="depth" value="5.0" step="0.01" required>
-            </div>
-
-            <!-- Tool and Step parameters -->
-            <div class="input-group">
-                <label for="toolD">Tool Diameter (mm)</label>
-                <input type="number" id="toolD" value="6.0" min="0.1" step="0.1" required>
-            </div>
-            <div class="input-group">
-                <label for="stepDown">Stepdown (Z, mm)</label>
-                <input type="number" id="stepDown" value="1.0" min="0.01" step="0.01" required>
+            <div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">3D Toolpath Preview</h2>
+                <p class="text-xs text-gray-500 mt-1">The path will appear once you press the generate button.</p>
+                <div id="cnc-3d-view">
+                    <canvas id="gcode-canvas"></canvas>
+                </div>
+                 <table class="w-full">
+                    <tr>
+                        <td class="w-1/2 p-2 align-top">
+                            <h1 class="text-xl font-bold mb-2">Order of operations:</h1>
+                            <ol class="list-decimal list-inside ml-4 text-gray-700">
+                                <li>Zero the machine at the cutout corner.</li>
+                                <li>Tool will lift up and travel to the <b>outside</b> perimeter start.</li>
+                                <li>Tool will plunge and cut the perimeter in multiple Z passes.</li>
+                                <li>Once finished, it will lift up and travel to start position at safe height.</li>
+                            </ol>
+                        </td>
+                    </tr>
+                </table>
             </div>
 
-            <!-- Feed Rate and Safety Height -->
-            <div class="input-group">
-                <label for="feedRate">Feed Rate (XY, mm/min)</label>
-                <input type="number" id="feedRate" value="800" min="1" step="10" required>
-            </div>
-            <div class="input-group">
-                <label for="plungeRate">Plunge Rate (Z, mm/min)</label>
-                <input type="number" id="plungeRate" value="200" min="1" step="10" required>
-            </div>
-            <div class="input-group">
-                <label for="safetyZ">Safety Z Height (mm)</label>
-                <input type="number" id="safetyZ" value="5.0" min="1.0" step="0.1" required>
+            <div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Input Parameters</h2>
+                <div id="form-section" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <div class="input-group">
+                        <label for="maxX">Cutout Width (X, mm)</label>
+                        <input type="number" id="maxX" value="50" min="1" step="0.1" required>
+                        <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="cutout_width.jpg" style="object-fit: cover;" alt="Cutout Width Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Cutout Width (X)</b> defines the desired size of the part along the X-axis. The tool will cut *outside* this line.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="maxY">Cutout Height (Y, mm)</label>
+                        <input type="number" id="maxY" value="50" min="1" step="0.1" required>
+                        <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="cutout_height.jpg" style="object-fit: cover;" alt="Cutout Height Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Cutout Height (Y)</b> defines the desired size of the part along the Y-axis. The tool center will trace the perimeter plus the tool radius.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="depth">Total Depth (Z, mm)</label>
+                        <input type="number" id="depth" value="5.0" step="0.01" required>
+                        <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Total Depth Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Total Depth (Z)</b> is the final, negative Z-coordinate the tool will reach. This should typically be slightly more than the material thickness.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="toolD">Tool Diameter (mm)</label>
+                        <input type="number" id="toolD" value="6.0" min="0.1" step="0.1" required>
+                        <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="tool_dia.jpg" style="object-fit: cover;" alt="Tool Diameter Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Tool Diameter</b> is the width of the end mill used for cutting. The offset calculation depends on this value.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="stepDown">Stepdown (Z, mm)</label>
+                        <input type="number" id="stepDown" value="1.0" min="0.01" step="0.01" required>
+                        <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="step_down.jpg" style="object-fit: cover;" alt="Stepdown Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Stepdown (Z)</b> is the maximum depth the tool will cut in a single pass before starting the next layer.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="feedRate">Feed Rate (XY, mm/min)</label>
+                        <input type="number" id="feedRate" value="800" min="1" step="10" required>
+                        <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="feedrate.jpg" style="object-fit: cover;" alt="Feed Rate Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Feed Rate (XY)</b> is the speed at which the tool moves horizontally during cutting operations (G1 moves).
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="plungeRate">Plunge Rate (Z, mm/min)</label>
+                        <input type="number" id="plungeRate" value="200" min="1" step="10" required>
+                        <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="plunge.jpg" style="object-fit: cover;" alt="Plunge Rate Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Plunge Rate (Z)</b> is the speed at which the tool moves vertically (down) when entering the material (G1 Z moves).
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="safetyZ">Safety Z Height (mm)</label>
+                        <input type="number" id="safetyZ" value="5.0" min="1.0" step="0.1" required>
+                        <div class="popup">
+                            <table class="popup-table">
+                                <tr>
+                                    <td><img src="safety_height.jpg" style="object-fit: cover;" alt="Safety Z Height Diagram"></td>
+                                    <td class="popup-text">
+                                        <b>Safety Z Height</b> is a clear height above the material that the tool uses when moving between non-cutting operations.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
 
-        <div class="flex justify-center mb-8">
-            <button onclick="generateGCode()" class="btn-primary flex items-center space-x-2">
+        <div class="flex justify-center mb-8 space-x-4">
+            <button onclick="generateGCode(false)" id="preview-btn" class="btn-secondary flex items-center space-x-2">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                </svg>
+                <span>Generate & Preview G-Code</span>
+            </button>
+           <button onclick="generateGCode(true)" id="download-btn" class="btn-primary flex items-center space-x-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
                     <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
@@ -117,8 +331,13 @@
         </div>
 
         <div id="output-section" class="mt-8">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Generated G-Code Preview</h2>
-            <textarea id="gcode-output" rows="15" class="w-full bg-gray-100 p-4 font-mono text-sm rounded-lg" readonly placeholder="G-Code will appear here after generation..."></textarea>
+            <button class="w-full text-left p-3 rounded-t-lg bg-gray-200 hover:bg-gray-300 transition flex items-center justify-between" onclick="toggleGCode()">
+                <h2 class="text-xl font-semibold text-gray-700 m-0">Raw G-Code Preview</h2>
+                <svg id="collapse-icon" class="h-6 w-6 transform transition-transform" viewBox="0 0 20 20" fill="currentColor" style="transform: rotate(-90deg);">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+            <textarea id="gcode-output" rows="15" class="w-full bg-gray-100 p-4 font-mono text-sm rounded-b-lg border-t-0" readonly placeholder="G-Code will appear here after generation..." style="display: none;"></textarea>
         </div>
 
         <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
@@ -165,8 +384,9 @@
 
         /**
          * Validates inputs and generates the G-Code.
+         * @param {boolean} triggerDownload - If true, trigger file download. Otherwise, only update preview.
          */
-        function generateGCode() {
+        function generateGCode(triggerDownload) {
             const output = document.getElementById('gcode-output');
             const errorDiv = document.getElementById('error-message');
             errorDiv.classList.add('hidden');
@@ -186,6 +406,11 @@
             const toolR = toolD / 2.0;
             const maxZSafe = safetyZ + Z_CLEARANCE;
 
+            // Starting point coordinates
+            const startX = -toolR;
+            const startY = -toolR;
+
+
             // Convert depth to a negative value if it's positive (milling down)
             depth = -Math.abs(depth);
 
@@ -201,7 +426,7 @@
                 return;
             }
 
-            // --- 3. G-Code Generation ---
+            // --- 3. G-Code Generation (LOGIC UNCHANGED) ---
             let gcode = [];
 
             // 3.1 Preamble (GRBL compatible)
@@ -237,8 +462,8 @@
 
                 gcode.push(`\n; === Z PASS ${passCount}: Depth Z${fmt(currentZ)} (No intermediate retraction) ===`);
 
-                const xStartCoord = fmt(-toolR);
-                const yStartCoord = fmt(-toolR);
+                const xStartCoord = fmt(startX);
+                const yStartCoord = fmt(startY);
 
                 // For the first pass, we rapid to the starting X/Y point from the safe Z height.
                 if (passCount === 1) {
@@ -275,17 +500,81 @@
             const finalGCode = gcode.join('\n');
             output.value = finalGCode;
 
-            // --- 4. Automatic Download ---
-            const blob = new Blob([finalGCode], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
+            // --- 4. Preview / Download Execution (UPDATED) ---
+            if (typeof window.GCodePreview !== 'undefined') {
+                const canvas = document.getElementById('gcode-canvas');
 
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `grbl_cutout_X${maxX}_Y${maxY}_D${Math.abs(depth).toFixed(1)}.gcode`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+                // Clear any previous canvas/viewer instance
+                canvas.parentNode.replaceChild(canvas.cloneNode(true), canvas);
+                const newCanvas = document.getElementById('gcode-canvas');
+
+                const maxDepth = Math.abs(depth);
+
+                // Calculate size to include tool offset for preview (maxX + toolD)
+                const previewMaxX = maxX + toolD * 2;
+                const previewMaxY = maxY + toolD * 2;
+
+                const preview = new GCodePreview.init({
+                    canvas: newCanvas,
+                    lineWidth: 2,
+                    lineHeight: 1,
+                    renderTravel: true,
+                    renderExtrusion: false, // Set to false for CNC paths
+                    renderTubes: false,
+
+                    // Set build volume dynamically based on user inputs + tool offset
+                    buildVolume: {
+                        x: previewMaxX,
+                        y: previewMaxY,
+                        z: maxDepth * 1.5 // Give some room above the max depth
+                    },
+                    // Setting origin to center of preview box for better visibility if using negative coordinates
+                    targetId: 'cnc-3d-view', // Use the parent div ID
+                    centerCamera: true, // Center the view
+
+                    topLayerColor: 0xffa500, // Orange cut color
+                    defaultColor: 0x808080,
+                    travelColor: 0x0000ff, // Blue travel color
+                });
+
+                preview.processGCode(finalGCode);
+
+            } else {
+                console.error("GCodePreview library is not defined. Ensure the ESM import loaded correctly.");
+                const viewerDiv = document.getElementById('cnc-3d-view');
+                viewerDiv.innerHTML = `<canvas id="gcode-canvas"></canvas><div style="position:absolute; top:50%; width:100%; text-align:center; color: #fca5a5;">
+                    ERROR: GCodePreview library failed to load. 3D preview unavailable.
+                </div>`;
+            }
+
+
+            if (triggerDownload) {
+                const blob = new Blob([finalGCode], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `grbl_cutout_X${maxX}_Y${maxY}_D${Math.abs(depth).toFixed(1)}.gcode`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        /**
+         * Toggles the visibility of the G-Code output textarea (Collapsible Feature).
+         */
+        function toggleGCode() {
+            const output = document.getElementById('gcode-output');
+            const icon = document.getElementById('collapse-icon');
+            if (output.style.display === 'none') {
+                output.style.display = 'block';
+                icon.style.transform = 'rotate(0deg)'; // Arrow points down (open)
+            } else {
+                output.style.display = 'none';
+                icon.style.transform = 'rotate(-90deg)'; // Arrow points left (closed)
+            }
         }
     </script>
 </body>
