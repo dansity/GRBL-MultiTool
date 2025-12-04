@@ -43,8 +43,7 @@ CSS and Styling: tailwindcss.com
 Now with tooltips:
 <img width="933" height="868" alt="image" src="https://github.com/user-attachments/assets/c489da74-5589-4d03-9f92-72ca9e861cbc" />
 
+### What's next? - Roadmap
 
-
-
-
-
+- Boring toolpath generator (similar to the current drilling) but with a helical path
+- Create a custom CSS file and free ourselves from tailwindcss without sacraficing function and simplicity
