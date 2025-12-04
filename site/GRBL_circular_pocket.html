@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script type="module">
-        import * as GCodePreview from "https://esm.sh/gcode-preview";
+        import * as GCodePreview from "https://esm.sh/gcode-preview@3.0.0-alpha.4";
 
         // Expose GCodePreview globally so it can be accessed by the main script
         // Note: Global exposure is necessary when mixing <script type="module"> and standard <script> tags.
@@ -144,7 +144,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            display: none; /*Seems like G3 is not implemented in gcode-preview so for now it is hidden*/
         }
         #gcode-canvas {
             width: 100%;
@@ -163,7 +162,8 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <!-- LEFT COLUMN: 3D Preview and Order of Operations -->
             <div>
-                <h2 class="text-xl font-semibold text-gray-700 mb-4" style="display: none;">3D Toolpath Preview</h2>
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">3D Toolpath Preview</h2>
+                <p class="text-xs text-gray-500 mt-1">The path will appear once you press the generate button.</p>
                 <div id="cnc-3d-view">
                     <canvas id="gcode-canvas"></canvas>
                 </div>
@@ -310,7 +310,7 @@
         </div>
 
         <div class="flex justify-center mb-8 space-x-4">
-            <button onclick="generateGCode(false)" id="preview-btn" class="btn-secondary flex items-center space-x-2" style="display: none;">
+            <button onclick="generateGCode(false)" id="preview-btn" class="btn-secondary flex items-center space-x-2">
                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                     <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
