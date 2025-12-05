@@ -490,7 +490,6 @@ X10,Y50</textarea>
             gcode.push(`G90 G21 ; Absolute positioning, Metric units`);
             gcode.push(`M03 S10000 ; Spindle On (Adjust S-value as needed)`);
             gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Move to safe clearance Z`);
-            gcode.push(`F${fmt(plungeSpeed)} ; Set drilling feedrate`);
             gcode.push(``);
 
             // --- Drill Cycle Generation ---
@@ -518,7 +517,7 @@ X10,Y50</textarea>
                         gcode.push(`G1 Z${fmt(Z_target)} F${fmt(plungeSpeed)} ; Peck ${i} of ${numPecks}`);
 
                         if (currentZ < plungeDepth) {
-                            gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Clear chips`);
+                            gcode.push(`G0 Z0 F${fmt(plungeSpeed * 2)}; Clear chips`); // Clear chips to top, upwards movement is double of plunge.
                         }
                     }
                 } else {
