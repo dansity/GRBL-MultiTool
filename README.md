@@ -9,7 +9,14 @@ However, you are more than welcome to remix it to imperial. Shouldn't be hard.
 ### DISCLAIMER
 It is easy to crash your machine in a thousand ways. Please always do dry runs if you are not familiar with gcode. I cannot take responsibility for what your machine does with this gcode.  
 If you download this project you accept this simple term.
-
+  
+### DOWNLOAD
+Download the latest zip from the releases:  
+https://github.com/dansity/GRBL-MultiTool/releases/latest  
+  
+Unzip locally, then open GRBL_Multi-Tool.html file.  
+Use your preferred G-Code sender to run cycle.  
+  
 ### Currently supported operations:
 
 - Facing / Skimming
