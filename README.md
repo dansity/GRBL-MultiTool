@@ -57,5 +57,5 @@ Now with tooltips:
 
 ### SUPPORT 
 If you ever make money witht this tool consider buying me a coffee.  
-[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" height="60" />](https://www.buymeacoffee.com/dansity)
+[<img src="https://github.com/user-attachments/assets/2adc4481-2c18-4e8a-a6e2-db9e4480036f" height="60" />](https://www.buymeacoffee.com/dansity)
 
