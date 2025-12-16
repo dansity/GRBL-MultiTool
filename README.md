@@ -54,3 +54,8 @@ Now with tooltips:
 
 - Boring toolpath generator (similar to the current drilling) but with a helical path
 - Create a custom CSS file and free ourselves from tailwindcss without sacraficing function and simplicity
+
+### SUPPORT 
+If you ever make money witht this tool consider buying me a coffee.  
+[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" height="60" />](https://www.buymeacoffee.com/dansity)
+
