@@ -171,7 +171,7 @@
     <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
         <h1 class="text-3xl font-bold text-center text-primary mb-6">CNC Helical Boring G-Code Generator</h1>
         <p class="text-center text-gray-600 mb-8">Generates G-Code for helical boring operations to create precise holes larger than your tool diameter.</p>
-		<div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="space-y-6">
                 <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Boring Parameters</h2>
@@ -195,7 +195,7 @@
                     <div class="input-group">
                         <label for="boreDia">Bore Hole Diameter (mm)</label>
                         <input type="number" id="boreDia" value="8.0" min="0.1" step="0.1" required>
-                        <p class="text-xs text-gray-500 mt-1">Final hole diameter. Must be less than 4x tool diameter.</p>
+                        <p class="text-xs text-gray-500 mt-1">Final hole diameter.</p>
                         <div class="popup">
                             <table class="popup-table">
                                 <tr>
@@ -333,6 +333,7 @@ X10,Y50</textarea>
                         </div>
                     </div>
                 </div>
+                <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
             </div>
         </div>
     </div>
@@ -515,8 +516,10 @@ X10,Y50</textarea>
             const numSegments = numRevolutions * 4;
             const zStep = boreDepth / numSegments;
             
-            const startX = parseFloat(centerX) + helixRadius;
-            const startY = parseFloat(centerY);
+            const centerXNum = parseFloat(centerX);
+            const centerYNum = parseFloat(centerY);
+            const startX = centerXNum + helixRadius;
+            const startY = centerYNum;
             
             gcode.push(`G00 Z${safeZ.toFixed(4)} ; Rapid to safe height`);
             gcode.push(`G00 X${startX.toFixed(4)} Y${startY.toFixed(4)} ; Rapid to start position`);
@@ -525,6 +528,8 @@ X10,Y50</textarea>
             gcode.push(`; Helix down to -${boreDepth}`);
             
             let currentAngle = 0;
+            let currentX = startX;
+            let currentY = startY;
             let currentZ = 0;
             
             for (let i = 0; i < numSegments; i++) {
@@ -532,10 +537,17 @@ X10,Y50</textarea>
                 currentZ -= zStep;
                 
                 const nextAngleRad = (currentAngle * Math.PI) / 180;
-                const nextX = parseFloat(centerX) + helixRadius * Math.cos(nextAngleRad);
-                const nextY = parseFloat(centerY) + helixRadius * Math.sin(nextAngleRad);
+                const nextX = centerXNum + helixRadius * Math.cos(nextAngleRad);
+                const nextY = centerYNum + helixRadius * Math.sin(nextAngleRad);
                 
-                gcode.push(`G03 R${helixRadius.toFixed(4)} X${nextX.toFixed(4)} Y${nextY.toFixed(4)} Z${currentZ.toFixed(4)} F${feedrate}`);
+                // Calculate I and J as offsets from current position to arc center
+                const I = centerXNum - currentX;
+                const J = centerYNum - currentY;
+                
+                gcode.push(`G03 X${nextX.toFixed(4)} Y${nextY.toFixed(4)} Z${currentZ.toFixed(4)} I${I.toFixed(4)} J${J.toFixed(4)} F${feedrate}`);
+                
+                currentX = nextX;
+                currentY = nextY;
             }
             
             gcode.push('');
@@ -543,10 +555,17 @@ X10,Y50</textarea>
             for (let i = 0; i < 4; i++) {
                 currentAngle += 90;
                 const nextAngleRad = (currentAngle * Math.PI) / 180;
-                const nextX = parseFloat(centerX) + helixRadius * Math.cos(nextAngleRad);
-                const nextY = parseFloat(centerY) + helixRadius * Math.sin(nextAngleRad);
+                const nextX = centerXNum + helixRadius * Math.cos(nextAngleRad);
+                const nextY = centerYNum + helixRadius * Math.sin(nextAngleRad);
                 
-                gcode.push(`G03 R${helixRadius.toFixed(4)} X${nextX.toFixed(4)} Y${nextY.toFixed(4)} Z${(-boreDepth).toFixed(4)} F${feedrate}`);
+                // Calculate I and J as offsets from current position to arc center
+                const I = centerXNum - currentX;
+                const J = centerYNum - currentY;
+                
+                gcode.push(`G03 X${nextX.toFixed(4)} Y${nextY.toFixed(4)} Z${(-boreDepth).toFixed(4)} I${I.toFixed(4)} J${J.toFixed(4)} F${feedrate}`);
+                
+                currentX = nextX;
+                currentY = nextY;
             }
             
             gcode.push(`G00 Z${safeZ.toFixed(4)} ; Retract to safe height`);
