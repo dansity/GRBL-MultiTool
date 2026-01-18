@@ -171,7 +171,9 @@
     <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
         <h1 class="text-3xl font-bold text-center text-primary mb-6">CNC Helical Boring G-Code Generator</h1>
         <p class="text-center text-gray-600 mb-8">Generates G-Code for helical boring operations to create precise holes larger than your tool diameter.</p>
-
+		<img src="drilling.png" width="50%" style="display: block; margin-left: auto; margin-right: auto;">
+		<div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
+		<div><br/></div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="space-y-6">
                 <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Boring Parameters</h2>
@@ -199,7 +201,7 @@
                         <div class="popup">
                             <table class="popup-table">
                                 <tr>
-                                    <td><img src="bore_dia.jpg" style="object-fit: cover;" alt="Bore Diameter"></td>
+                                    <td><img src="bore_width.jpg" style="object-fit: cover;" alt="Bore Diameter"></td>
                                     <td class="popup-text">
                                         <b>Bore Hole Diameter</b> is the final diameter of the hole you want to create. Must be larger than tool diameter.
                                     </td>
@@ -212,12 +214,12 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="input-group">
                         <label for="boreDepth">Bore Depth (Z-, mm)</label>
-                        <input type="number" id="boreDepth" value="15.0" min="0.1" step="0.1" required>
+                        <input type="number" id="boreDepth" value="6.0" min="0.1" step="0.1" required>
                         <p class="text-xs text-gray-500 mt-1">Total depth to bore.</p>
                         <div class="popup">
                             <table class="popup-table">
                                 <tr>
-                                    <td><img src="bore_depth.jpg" style="object-fit: cover;" alt="Bore Depth"></td>
+                                    <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Bore Depth"></td>
                                     <td class="popup-text">
                                         <b>Bore Depth</b> is the total depth of the hole, specified as a positive value. The tool will helix down to this depth.
                                     </td>
@@ -245,7 +247,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="input-group">
                         <label for="feedrate">Feed Rate (mm/min)</label>
-                        <input type="number" id="feedrate" value="200" min="10" step="10" required>
+                        <input type="number" id="feedrate" value="800" min="10" step="10" required>
                         <p class="text-xs text-gray-500 mt-1">Cutting feed rate.</p>
                         <div class="popup">
                             <table class="popup-table">
@@ -333,7 +335,6 @@ X10,Y50</textarea>
                         </div>
                     </div>
                 </div>
-                <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
             </div>
         </div>
     </div>
