@@ -4,107 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNC Helical Boring G-Code Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="./css/materialize.css">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
     <script type="module">
         import * as GCodePreview from "https://esm.sh/gcode-preview@3.0.0-alpha.3";
-        
         window.GCodePreviewInstance = new GCodePreview.init({});
     </script>
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#0891b2',
-                        'secondary': '#7c3aed',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        .input-group {
-            position: relative; 
-        }
-        .input-group label {
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 4px;
-            display: block;
-            font-size: 0.875rem; 
-        }
-        .input-group input, .input-group textarea {
-            border: 1px solid #d1d5db;
-            padding: 8px 12px;
-            border-radius: 6px;
-            width: 100%;
-            transition: border-color 0.2s;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-        .input-group input:focus, .input-group textarea:focus {
-            outline: none;
-            border-color: #0891b2;
-            box-shadow: 0 0 0 1px #0891b2;
-        }
-        .btn-primary {
-            background-color: #0891b2;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn-primary:hover {
-            background-color: #0e7490;
-        }
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-        .btn-secondary {
-            background-color: #7c3aed;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn-secondary:hover {
-            background-color: #6d28d9;
-        }
-        .btn-secondary:active {
-            transform: scale(0.98);
-        }
-        .gcode-output {
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-size: 0.75rem; 
+        :root {
+            --primary-color: #0891b2;
+            --primary-dark: #0e7490;
         }
 
-        .accordion-header {
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .primary-text {
+            color: #0891b2 !important;
         }
-        .accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            background-color: #f9fafb; 
-            border-radius: 0 0 8px 8px;
+        
+        body {
+            background-color: #f5f5f5;
         }
-        .accordion-content.active {
-            max-height: 500px; 
-            border: 1px solid #e5e7eb;
-            border-top: none;
-            padding: 1rem;
+        
+        .primary-bg {
+            background-color: var(--primary-color) !important;
+        }
+        
+        .primary-bg:hover {
+            background-color: var(--primary-dark) !important;
+        }
+        
+        input[type="number"]:focus:not([readonly]),
+        textarea:focus:not([readonly]) {
+            border-bottom: 1px solid var(--primary-color) !important;
+            box-shadow: 0 1px 0 0 var(--primary-color) !important;
+        }
+        
+        .input-field label.active {
+            color: var(--primary-color) !important;
+        }
+        
+        .gcode-output {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.75rem;
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            background-color: #f9f9f9;
         }
 
         .popup {
@@ -113,20 +64,19 @@
             transition: opacity 0.3s, visibility 0.3s;
             position: absolute;
             z-index: 10;
-            top: 100%; 
+            top: 100%;
             left: 0;
             margin-top: 5px;
-
             background-color: white;
             padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             max-width: 290px;
             min-width: 290px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #e0e0e0;
         }
 
-        .input-group:hover .popup {
+        .input-field:hover .popup {
             visibility: visible;
             opacity: 1;
         }
@@ -135,213 +85,284 @@
             width: 100%;
             border-collapse: collapse;
         }
+        
         .popup-table td:first-child {
-            width: 120px; 
+            width: 120px;
             padding-right: 10px;
             vertical-align: top;
         }
+        
         .popup-table td:last-child {
-            width: calc(100% - 120px); 
+            width: calc(100% - 120px);
             vertical-align: top;
         }
+        
         .popup-table img {
             display: block;
             max-width: 100%;
             height: auto;
             border-radius: 4px;
         }
+        
         .popup-text {
-            font-family: inherit;
             font-size: 0.875rem;
-            color: #374151;
+            color: #424242;
             line-height: 1.4;
         }
+        
         #gcodeViewerContainer {
             height: 300px;
             position: relative;
+            background-color: #e0e0e0;
+            border-radius: 4px;
         }
+        
         #gcodeCanvas {
             width: 100%;
             height: 100%;
         }
+        
+        #viewerPlaceholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            color: #9e9e9e;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .helper-text {
+            font-size: 0.8rem;
+            color: #9e9e9e;
+        }
+        
+        .card-title {
+            color: var(--primary-color) !important;
+        }
+        
+        .download-message {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background-color: #c8e6c9;
+            color: #2e7d32;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .error-message {
+            background-color: #ffcdd2;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #ef5350;
+        }
     </style>
 </head>
-<body class="p-4 md:p-8">
-
-    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
-        <h1 class="text-3xl font-bold text-center text-primary mb-6">CNC Helical Boring G-Code Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Generates G-Code for helical boring operations to create precise holes larger than your tool diameter.</p>
-		<img src="drilling.png" width="50%" style="display: block; margin-left: auto; margin-right: auto;">
-		<div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
-		<div><br/></div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="space-y-6">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Boring Parameters</h2>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="input-group">
-                        <label for="toolDia">Tool Diameter (mm)</label>
-                        <input type="number" id="toolDia" value="6.0" min="0.1" step="0.1" required>
-                        <p class="text-xs text-gray-500 mt-1">Diameter of cutting tool.</p>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="tool_dia.jpg" style="object-fit: cover;" alt="Tool Diameter"></td>
-                                    <td class="popup-text">
-                                        <b>Tool Diameter</b> is the diameter of your end mill or boring tool that will cut the material.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label for="boreDia">Bore Hole Diameter (mm)</label>
-                        <input type="number" id="boreDia" value="8.0" min="0.1" step="0.1" required>
-                        <p class="text-xs text-gray-500 mt-1">Final hole diameter.</p>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="bore_width.jpg" style="object-fit: cover;" alt="Bore Diameter"></td>
-                                    <td class="popup-text">
-                                        <b>Bore Hole Diameter</b> is the final diameter of the hole you want to create. Must be larger than tool diameter.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
+<body>
+    <div class="container" style="margin-top: 2rem; margin-bottom: 2rem;">
+        <div class="card">
+            <div class="card-content">
+                <h4  class="center-align primary-text" style="font-weight: bold;">CNC Helical Boring G-Code Generator</h4>
+                <p class="center-align grey-text">Generates G-Code for helical boring operations to create precise holes larger than your tool diameter.</p>
+                
+                <div class="center-align" style="margin: 2rem 0;">
+                    <img src="drilling.png" alt="Drilling illustration" style="max-width: 50%; height: auto;">
                 </div>
+                
+                <div id="error-message" class="error-message hide"></div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="input-group">
-                        <label for="boreDepth">Bore Depth (Z-, mm)</label>
-                        <input type="number" id="boreDepth" value="6.0" min="0.1" step="0.1" required>
-                        <p class="text-xs text-gray-500 mt-1">Total depth to bore.</p>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Bore Depth"></td>
-                                    <td class="popup-text">
-                                        <b>Bore Depth</b> is the total depth of the hole, specified as a positive value. The tool will helix down to this depth.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label for="ramping">Ramping per Turn (mm)</label>
-                        <input type="number" id="ramping" value="1.0" min="0.1" step="0.1" required>
-                        <p class="text-xs text-gray-500 mt-1">Z descent per revolution.</p>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="ramping.jpg" style="object-fit: cover;" alt="Ramping"></td>
-                                    <td class="popup-text">
-                                        <b>Ramping per Turn</b> is how much the tool descends in Z for each complete circular revolution during the helix.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                <div class="row" style="margin-top: 2rem;">
+                    <!-- Left Column: Parameters -->
+                    <div class="col s12 l6">
+                        <h5 class="grey-text text-darken-2">Boring Parameters</h5>
+                        <div class="divider" style="margin-bottom: 1.5rem;"></div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="input-group">
-                        <label for="feedrate">Feed Rate (mm/min)</label>
-                        <input type="number" id="feedrate" value="800" min="10" step="10" required>
-                        <p class="text-xs text-gray-500 mt-1">Cutting feed rate.</p>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="feedrate.jpg" style="object-fit: cover;" alt="Feed Rate"></td>
-                                    <td class="popup-text">
-                                        <b>Feed Rate</b> is the speed at which the tool moves through the material during cutting operations.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label for="safeZ">Safe Z Clearance (mm)</label>
-                        <input type="number" id="safeZ" value="2.0" min="0.1" step="0.1" required>
-                        <p class="text-xs text-gray-500 mt-1">Z height for rapid moves (G0).</p>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="safety_height.jpg" style="object-fit: cover;" alt="Safe Z Clearance Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Safe Z Clearance</b> is the Z-height above the material used for rapid horizontal travel (G0) between bore holes.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                        <div class="row">
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="toolDia" value="6.0" min="0.1" step="0.1">
+                                <label for="toolDia" class="active">Tool Diameter (mm)</label>
+                                <span class="helper-text">Diameter of cutting tool.</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="tool_dia.jpg" alt="Tool Diameter"></td>
+                                            <td class="popup-text">
+                                                <b>Tool Diameter</b> is the diameter of your end mill or boring tool that will cut the material.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
 
-                <div class="input-group">
-                    <label for="boreLocations">Bore Hole Locations (X,Y)</label>
-                    <textarea id="boreLocations" rows="6" placeholder="Format: X0,Y0 (one per line)" class="gcode-output">X10,Y10
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="boreDia" value="8.0" min="0.1" step="0.1">
+                                <label for="boreDia" class="active">Bore Hole Diameter (mm)</label>
+                                <span class="helper-text">Final hole diameter.</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="bore_width.jpg" alt="Bore Diameter"></td>
+                                            <td class="popup-text">
+                                                <b>Bore Hole Diameter</b> is the final diameter of the hole you want to create. Must be larger than tool diameter.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="boreDepth" value="6.0" min="0.1" step="0.1">
+                                <label for="boreDepth" class="active">Bore Depth (Z-, mm)</label>
+                                <span class="helper-text">Total depth to bore.</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="pocket_depth.jpg" alt="Bore Depth"></td>
+                                            <td class="popup-text">
+                                                <b>Bore Depth</b> is the total depth of the hole, specified as a positive value. The tool will helix down to this depth.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="ramping" value="1.0" min="0.1" step="0.1">
+                                <label for="ramping" class="active">Ramping per Turn (mm)</label>
+                                <span class="helper-text">Z descent per revolution.</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="ramping.jpg" alt="Ramping"></td>
+                                            <td class="popup-text">
+                                                <b>Ramping per Turn</b> is how much the tool descends in Z for each complete circular revolution during the helix.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="feedrate" value="800" min="10" step="10">
+                                <label for="feedrate" class="active">Feed Rate (mm/min)</label>
+                                <span class="helper-text">Cutting feed rate.</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="feedrate.jpg" alt="Feed Rate"></td>
+                                            <td class="popup-text">
+                                                <b>Feed Rate</b> is the speed at which the tool moves through the material during cutting operations.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="safeZ" value="2.0" min="0.1" step="0.1">
+                                <label for="safeZ" class="active">Safe Z Clearance (mm)</label>
+                                <span class="helper-text">Z height for rapid moves (G0).</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="safety_height.jpg" alt="Safe Z Clearance"></td>
+                                            <td class="popup-text">
+                                                <b>Safe Z Clearance</b> is the Z-height above the material used for rapid horizontal travel (G0) between bore holes.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-field col s12">
+                                <textarea id="boreLocations" class="materialize-textarea" style="height: 120px;">X10,Y10
 X50,Y10
 X50,Y50
 X10,Y50</textarea>
-                    <p class="text-xs text-gray-500 mt-1">Enter X and Y coordinates separated by a comma (or space/tab).</p>
-                    <div class="popup">
-                        <table class="popup-table">
-                            <tr>
-                                <td class="popup-text">
-                                    <b>Bore Hole Locations</b> are the X and Y coordinates of the center of each bore hole, relative to the work zero (G90). Enter one coordinate pair per line.
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="flex justify-center space-x-4">
-                    <button id="generateDownloadBtn" class="btn-primary w-full md:w-auto flex items-center justify-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Generate & Download</span>
-                    </button>
-                    <button id="generatePreviewBtn" class="btn-secondary w-full md:w-auto flex items-center justify-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Generate & Preview</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="space-y-6">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">G-Code Visualization and Preview</h2>
-                
-                <div id="gcodeViewerContainer" class="bg-gray-200 border border-gray-300 rounded-lg shadow-inner flex items-center justify-center">
-                    <canvas id="gcodeCanvas" style="width: 100%; height: 100%;"></canvas>
-                    <p id="viewerPlaceholder" class="text-gray-500 text-center p-4 absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">Click "Generate & Preview" to load the G-Code visualization here.</p>
-                </div>
-
-                <div class="border border-gray-300 rounded-lg shadow-sm">
-                    <div id="accordionHeader" class="accordion-header p-3 bg-gray-100 rounded-t-lg">
-                        <span class="text-base font-semibold text-gray-700">Raw Generated G-Code</span>
-                        <svg id="accordionIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transform transition-transform" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div id="accordionContent" class="accordion-content">
-                        <div class="relative">
-                            <textarea id="gcodeOutput" rows="15" readonly class="w-full bg-gray-100 p-3 gcode-output text-gray-800 rounded-lg shadow-inner"></textarea>
-                            <div id="download-message" class="absolute bottom-3 left-3 text-xs text-green-700 font-semibold bg-green-100 px-2 py-1 rounded hidden">Download starting...</div>
+                                <label for="boreLocations" class="active">Bore Hole Locations (X,Y)</label>
+                                <span class="helper-text">Enter X and Y coordinates separated by a comma (or space/tab).</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td class="popup-text">
+                                                <b>Bore Hole Locations</b> are the X and Y coordinates of the center of each bore hole, relative to the work zero (G90). Enter one coordinate pair per line.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="row">
+                            <div class="col s12 center-align">
+                                <button id="generateDownloadBtn" class="btn waves-effect waves-light primary-bg" style="margin-right: 8px;">
+                                    <i class="material-icons left">get_app</i>
+                                    Generate & Download
+                                </button>
+                                <button id="generatePreviewBtn" class="btn waves-effect waves-light purple darken-2">
+                                    <i class="material-icons left">visibility</i>
+                                    Generate & Preview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Visualization -->
+                    <div class="col s12 l6">
+                        <h5 class="grey-text text-darken-2">G-Code Visualization and Preview</h5>
+                        <div class="divider" style="margin-bottom: 1.5rem;"></div>
+
+                        <div id="gcodeViewerContainer">
+                            <canvas id="gcodeCanvas"></canvas>
+                            <p id="viewerPlaceholder">Click "Generate & Preview" to load the G-Code visualization here.</p>
+                        </div>
+
+                        <ul class="collapsible" style="margin-top: 1.5rem;">
+                            <li>
+                                <div class="collapsible-header">
+                                    <i class="material-icons">code</i>
+                                    Raw Generated G-Code
+                                </div>
+                                <div class="collapsible-body" style="position: relative;">
+                                    <textarea id="gcodeOutput" readonly class="gcode-output" style="min-height: 300px; width: 100%; border: none; background-color: transparent;"></textarea>
+                                    <div id="download-message" class="download-message hide">Download starting...</div>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Materialize JavaScript -->
+    <script src="./js/materialize.js"></script>
+
     <script type="module">
         import * as GCodePreview from "https://esm.sh/gcode-preview";
 
+        // Initialize Materialize components
+        document.addEventListener('DOMContentLoaded', function() {
+            M.Collapsible.init(document.querySelectorAll('.collapsible'));
+            M.updateTextFields();
+        });
+
+        // DOM Elements
         const toolDiaInput = document.getElementById('toolDia');
         const boreDiaInput = document.getElementById('boreDia');
         const boreDepthInput = document.getElementById('boreDepth');
@@ -350,16 +371,14 @@ X10,Y50</textarea>
         const safeZInput = document.getElementById('safeZ');
         const boreLocationsTextarea = document.getElementById('boreLocations');
         const gcodeOutputTextarea = document.getElementById('gcodeOutput');
-        const generateDownloadBtn = document.getElementById('generateDownloadBtn'); 
-        const generatePreviewBtn = document.getElementById('generatePreviewBtn'); 
+        const generateDownloadBtn = document.getElementById('generateDownloadBtn');
+        const generatePreviewBtn = document.getElementById('generatePreviewBtn');
         const errorDiv = document.getElementById('error-message');
         const downloadMessage = document.getElementById('download-message');
-        const accordionHeader = document.getElementById('accordionHeader');
-        const accordionContent = document.getElementById('accordionContent');
-        const accordionIcon = document.getElementById('accordionIcon');
         const gcodeCanvas = document.getElementById('gcodeCanvas');
         const viewerPlaceholder = document.getElementById('viewerPlaceholder');
 
+        // Initialize GCode Preview
         const preview = new GCodePreview.init({
             canvas: gcodeCanvas,
             lineWidth: 5,
@@ -368,26 +387,13 @@ X10,Y50</textarea>
             renderExtrusion: true,
             renderTubes: false,
             buildVolume: {
-              x: 200,
-              y: 200
+                x: 200,
+                y: 200
             }
         });
         preview.clear();
 
-        accordionHeader.addEventListener('click', () => {
-            const isCollapsed = !accordionContent.classList.contains('active');
-            
-            accordionContent.classList.toggle('active');
-
-            if (isCollapsed) {
-                accordionIcon.classList.add('rotate-180');
-                accordionContent.style.maxHeight = accordionContent.scrollHeight + "px";
-            } else {
-                accordionIcon.classList.remove('rotate-180');
-                accordionContent.style.maxHeight = "0";
-            }
-        });
-
+        // Event Listeners
         generateDownloadBtn.addEventListener('click', () => {
             const generatedCode = generateGCode();
             if (generatedCode) {
@@ -395,7 +401,7 @@ X10,Y50</textarea>
             }
         });
 
-        generatePreviewBtn.addEventListener('click', () => { 
+        generatePreviewBtn.addEventListener('click', () => {
             const generatedCode = generateGCode();
             if (generatedCode) {
                 streamGCodeToViewer(generatedCode);
@@ -404,12 +410,12 @@ X10,Y50</textarea>
 
         function displayError(message) {
             errorDiv.textContent = message;
-            errorDiv.classList.remove('hidden');
+            errorDiv.classList.remove('hide');
             gcodeOutputTextarea.value = message;
         }
 
         function clearError() {
-             errorDiv.classList.add('hidden');
+            errorDiv.classList.add('hide');
         }
 
         function parseLocations(text) {
@@ -442,6 +448,7 @@ X10,Y50</textarea>
             const safeZ = parseFloat(safeZInput.value);
             const points = parseLocations(boreLocationsTextarea.value);
 
+            // Validation
             if (isNaN(toolDia) || toolDia <= 0) { displayError("Tool Diameter must be a positive number."); return null; }
             if (isNaN(boreDia) || boreDia <= 0) { displayError("Bore Hole Diameter must be a positive number."); return null; }
             if (isNaN(boreDepth) || boreDepth <= 0) { displayError("Bore Depth must be a positive number."); return null; }
@@ -470,7 +477,7 @@ X10,Y50</textarea>
             gcode.push(`; Feedrate: ${feedrate}`);
             gcode.push('G90 ; Absolute positioning');
             gcode.push('G21 ; Metric units');
-            gcode.push('M03 S10000 ; Spindle On - Adjust S-value as needed');
+            gcode.push('M03 S10000 ; Spindle On');
             gcode.push(`G0 Z${safeZ.toFixed(3)} ; Move to safe clearance Z`);
             gcode.push('');
 
@@ -522,9 +529,9 @@ X10,Y50</textarea>
             const startX = centerXNum + helixRadius;
             const startY = centerYNum;
             
-            gcode.push(`G00 Z${safeZ.toFixed(4)} ; Rapid to safe height`);
-            gcode.push(`G00 X${startX.toFixed(4)} Y${startY.toFixed(4)} ; Rapid to start position`);
-            gcode.push(`G01 Z0.001 F${feedrate} ; Feed down to start`);
+            gcode.push(`G00 Z${safeZ.toFixed(4)}`);
+            gcode.push(`G00 X${startX.toFixed(4)} Y${startY.toFixed(4)}`);
+            gcode.push(`G01 Z0.001 F${feedrate}`);
             gcode.push('');
             gcode.push(`; Helix down to -${boreDepth}`);
             
@@ -541,7 +548,6 @@ X10,Y50</textarea>
                 const nextX = centerXNum + helixRadius * Math.cos(nextAngleRad);
                 const nextY = centerYNum + helixRadius * Math.sin(nextAngleRad);
                 
-                // Calculate I and J as offsets from current position to arc center
                 const I = centerXNum - currentX;
                 const J = centerYNum - currentY;
                 
@@ -559,7 +565,6 @@ X10,Y50</textarea>
                 const nextX = centerXNum + helixRadius * Math.cos(nextAngleRad);
                 const nextY = centerYNum + helixRadius * Math.sin(nextAngleRad);
                 
-                // Calculate I and J as offsets from current position to arc center
                 const I = centerXNum - currentX;
                 const J = centerYNum - currentY;
                 
@@ -569,13 +574,13 @@ X10,Y50</textarea>
                 currentY = nextY;
             }
             
-            gcode.push(`G00 Z${safeZ.toFixed(4)} ; Retract to safe height`);
+            gcode.push(`G00 Z${safeZ.toFixed(4)}`);
             
             return gcode;
         }
 
         function triggerDownload(gcode) {
-            downloadMessage.classList.remove('hidden');
+            downloadMessage.classList.remove('hide');
 
             const boreDia = Math.abs(parseFloat(boreDiaInput.value) || 0).toFixed(1);
             const filename = `cnc_bore_D${boreDia}.gcode`;
@@ -592,7 +597,7 @@ X10,Y50</textarea>
             URL.revokeObjectURL(url);
 
             setTimeout(() => {
-                downloadMessage.classList.add('hidden');
+                downloadMessage.classList.add('hide');
             }, 3000);
         }
 
@@ -603,16 +608,13 @@ X10,Y50</textarea>
             preview.clear();
             preview.processGCode(gcode);
             preview.render();
-            preview.center(); 
+            preview.center();
         }
 
-        window.onload = function() {
+        // Initial generation on page load
+        window.addEventListener('load', function() {
             generateGCode();
-            accordionContent.style.maxHeight = "0";
-            accordionContent.classList.remove('active'); 
-            accordionIcon.classList.remove('rotate-180');
-        };
-
+        });
     </script>
 </body>
 </html>
