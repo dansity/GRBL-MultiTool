@@ -4,344 +4,385 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNC Drilling Path G-Code Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="./css/materialize.css">
+
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
     <script type="module">
         import * as GCodePreview from "https://esm.sh/gcode-preview@3.0.0-alpha.3";
-        
-        // Define the preview instance globally or attach it to the window object
-        // so it can be accessed by the main script block.
-        window.GCodePreviewInstance = new GCodePreview.init({
-            // The canvas element ID will be resolved later in the main script
-            // Or we will configure it directly in the main script block where the DOM is ready.
-        });
+        window.GCodePreviewInstance = new GCodePreview.init({});
     </script>
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#ca8a04',
-                        'secondary': '#4f46e5',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        /* Custom styles for better aesthetics */
+        :root {
+            --primary-color: #ca8a04;
+            --primary-dark: #a16207;
+            --secondary-color: #4f46e5;
+            --secondary-dark: #4338ca;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background-color: #f5f5f5;
         }
-        .input-group {
-            position: relative; 
+
+        .primary-bg {
+            background-color: var(--primary-color) !important;
         }
-        .input-group label {
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 4px;
-            display: block;
-            font-size: 0.875rem; 
+
+        .primary-bg:hover {
+            background-color: var(--primary-dark) !important;
         }
-        .input-group input, .input-group textarea {
-            border: 1px solid #d1d5db;
-            padding: 8px 12px;
-            border-radius: 6px;
-            width: 100%;
-            transition: border-color 0.2s;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+        .secondary-bg {
+            background-color: var(--secondary-color) !important;
         }
-        .input-group input:focus, .input-group textarea:focus {
-            outline: none;
-            border-color: #ca8a04;
-            box-shadow: 0 0 0 1px #ca8a04;
+
+        .secondary-bg:hover {
+            background-color: var(--secondary-dark) !important;
         }
-        .btn-primary {
-            background-color: #ca8a04;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.2s, transform 0.1s;
+
+        input[type="number"]:focus:not([readonly]),
+        textarea:focus:not([readonly]) {
+            border-bottom: 1px solid var(--primary-color) !important;
+            box-shadow: 0 1px 0 0 var(--primary-color) !important;
         }
-        .btn-primary:hover {
-            background-color: #a16207;
+
+        .input-field label.active {
+            color: var(--primary-color) !important;
         }
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-        .btn-secondary { /* New style for Preview button */
-            background-color: #4f46e5;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn-secondary:hover {
-            background-color: #4338ca;
-        }
-        .btn-secondary:active {
-            transform: scale(0.98);
-        }
+
         .gcode-output {
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             white-space: pre-wrap;
             word-wrap: break-word;
-            font-size: 0.75rem; 
+            font-size: 0.75rem;
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            background-color: #f9f9f9;
         }
 
-        /* --- Accordion Styles --- */
-        .accordion-header {
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            background-color: #f9fafb; 
-            border-radius: 0 0 8px 8px;
-        }
-        .accordion-content.active {
-            max-height: 500px; 
-            border: 1px solid #e5e7eb;
-            border-top: none;
-            padding: 1rem;
-        }
-
-        /* --- Popup Styles (existing, kept for completeness) --- */
         .popup {
             visibility: hidden;
             opacity: 0;
             transition: opacity 0.3s, visibility 0.3s;
             position: absolute;
             z-index: 10;
-            top: 100%; 
+            top: 100%;
             left: 0;
             margin-top: 5px;
-
             background-color: white;
             padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             max-width: 290px;
             min-width: 290px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #e0e0e0;
         }
 
-        .input-group:hover .popup {
+        .input-field:hover .popup {
             visibility: visible;
             opacity: 1;
         }
 
-        /* Popup Table Layout */
         .popup-table {
             width: 100%;
             border-collapse: collapse;
         }
+
         .popup-table td:first-child {
-            width: 120px; 
+            width: 120px;
             padding-right: 10px;
             vertical-align: top;
         }
+
         .popup-table td:last-child {
-            width: calc(100% - 120px); 
+            width: calc(100% - 120px);
             vertical-align: top;
         }
+
         .popup-table img {
             display: block;
             max-width: 100%;
             height: auto;
             border-radius: 4px;
         }
+
         .popup-text {
-            font-family: inherit;
             font-size: 0.875rem;
-            color: #374151;
+            color: #424242;
             line-height: 1.4;
         }
-        /* Style for the GCode viewer container to ensure proper height */
+
         #gcodeViewerContainer {
             height: 300px;
             position: relative;
+            background-color: #e0e0e0;
+            border-radius: 4px;
         }
-        /* Style the canvas for 3D view */
+
         #gcodeCanvas {
             width: 100%;
             height: 100%;
         }
+
+        #viewerPlaceholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            color: #9e9e9e;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .helper-text {
+            font-size: 0.8rem;
+            color: #9e9e9e;
+        }
+
+        .card-title {
+            color: var(--primary-color) !important;
+            font-weight: 700 !important;
+        }
+
+        .download-message {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background-color: #c8e6c9;
+            color: #2e7d32;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .error-message {
+            background-color: #ffcdd2;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #ef5350;
+        }
+
+        .section-title {
+            color: #616161;
+            font-weight: 600;
+        }
+
+        [type="checkbox"]:checked + span:not(.lever):before {
+            border-right: 2px solid var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        #peckField {
+            transition: opacity 0.3s, max-height 0.3s;
+        }
+
+        #peckField.hide {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body>
+    <div class="container" style="margin-top: 2rem; margin-bottom: 2rem;">
+        <div class="card">
+            <div class="card-content">
+                <h4 class="card-title center-align">CNC Drilling Path G-Code Generator</h4>
+                <p class="center-align grey-text text-darken-1">Generates G-Code (G81/G73 emulation) for drilling multiple holes with optional chip-clearing pecker cycle.</p>
 
-    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
-        <h1 class="text-3xl font-bold text-center text-primary mb-6">CNC Drilling Path G-Code Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Generates G-Code (G81/G73 emulation) for drilling multiple holes with optional chip-clearing pecker cycle.</p>
-
-        <img src="drilling.png" width="70%" style="display: block; margin-left: auto; margin-right: auto;">
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="space-y-6">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">Drilling Parameters</h2>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="input-group">
-                        <label for="plungeDepth">Plunge Depth (Z-, mm)</label>
-                        <input type="number" id="plungeDepth" value="5.0" min="0.1" step="0.1" required>
-                        <p class="text-xs text-gray-500 mt-1">Total depth to drill.</p>
-                           <div class="popup">
-                               <table class="popup-table">
-                                   <tr>
-                                       <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Plunge Depth Diagram"></td>
-                                       <td class="popup-text">
-                                           <b>Plunge Depth (Z)</b> is the total desired depth of the drilled hole, specified as a positive value. It translates to a negative Z coordinate.
-                                       </td>
-                                   </tr>
-                               </table>
-                           </div>
-                    </div>
-                    <div class="input-group">
-                        <label for="plungeSpeed">Plunge Speed (F, mm/min)</label>
-                        <input type="number" id="plungeSpeed" value="800" min="10" step="10" required>
-                        <p class="text-xs text-gray-500 mt-1">Feed rate for G1 moves.</p>
-                           <div class="popup">
-                               <table class="popup-table">
-                                   <tr>
-                                       <td><img src="plunge.jpg" style="object-fit: cover;" alt="Plunge Speed Diagram"></td>
-                                       <td class="popup-text">
-                                           <b>Plunge Speed (F)</b> is the speed (feed rate) at which the drill moves vertically (down) when cutting into the material.
-                                       </td>
-                                   </tr>
-                               </table>
-                           </div>
-                    </div>
+                <div class="center-align" style="margin: 2rem 0;">
+                    <img src="drilling.png" alt="Drilling illustration" style="max-width: 70%; height: auto;">
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="input-group">
-                        <label for="dwellTime">Dwell on Bottom (ms)</label>
-                        <input type="number" id="dwellTime" value="0" min="0" step="100" required>
-                        <p class="text-xs text-gray-500 mt-1">Time in milliseconds (0 for none).</p>
-                           <div class="popup">
-                               <table class="popup-table">
-                                   <tr>
-                                       <td><img src="dwell.jpg" style="object-fit: cover;" alt="Dwell Time Diagram"></td>
-                                       <td class="popup-text">
-                                           <b>Dwell Time (G4)</b> is a pause commanded at the bottom of the hole, to ensure the hole bottom is clear. Specified in milliseconds.
-                                       </td>
-                                   </tr>
-                               </table>
-                           </div>
-                    </div>
-                    <div class="input-group">
-                        <label for="safeZ">Safe Z Clearance (mm)</label>
-                        <input type="number" id="safeZ" value="2.0" min="0.1" step="0.1" required>
-                        <p class="text-xs text-gray-500 mt-1">Z height for rapid moves (G0).</p>
-                           <div class="popup">
-                               <table class="popup-table">
-                                   <tr>
-                                       <td><img src="safety_height.jpg" style="object-fit: cover;" alt="Safe Z Clearance Diagram"></td>
-                                       <td class="popup-text">
-                                           <b>Safe Z Clearance</b> is the Z-height above the material used for rapid horizontal travel (G0) between holes or during chip clearing.
-                                       </td>
-                                   </tr>
-                               </table>
-                           </div>
-                    </div>
-                </div>
+                <div class="row" style="margin-top: 2rem;">
+                    <!-- Left Column: Parameters -->
+                    <div class="col s12 l6">
+                        <h5 class="section-title">Drilling Parameters</h5>
+                        <div class="divider" style="margin-bottom: 1.5rem;"></div>
 
-                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-                    <input type="checkbox" id="peckerDrilling" class="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
-                    <label for="peckerDrilling" class="text-sm font-medium text-gray-700 select-none cursor-pointer">Enable Pecker Drilling (G0 Z-Clearance)</label>
-                </div>
+                        <div class="row">
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="plungeDepth" value="5.0" min="0.1" step="0.1">
+                                <label for="plungeDepth" class="active">Plunge Depth (Z-, mm)</label>
+                                <span class="helper-text">Total depth to drill.</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="pocket_depth.jpg" alt="Plunge Depth"></td>
+                                            <td class="popup-text">
+                                                <b>Plunge Depth (Z)</b> is the total desired depth of the drilled hole, specified as a positive value. It translates to a negative Z coordinate.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
 
-                <div id="peckField" class="input-group hidden">
-                    <label for="numPecks">Number of Pecks</label>
-                    <input type="number" id="numPecks" value="5" min="2" step="1">
-                    <p class="text-xs text-gray-500 mt-1">Minimum 2 pecks.</p>
-                    <div class="popup">
-                        <table class="popup-table">
-                            <tr>
-                                <td><img src="peck.jpg" style="object-fit: cover;" alt="Number of Pecks Diagram"></td>
-                                <td class="popup-text">
-                                    <b>Number of Pecks</b> divides the total plunge depth into equal segments. After each peck, the tool retracts to the top to clear chips.
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="plungeSpeed" value="800" min="10" step="10">
+                                <label for="plungeSpeed" class="active">Plunge Speed (F, mm/min)</label>
+                                <span class="helper-text">Feed rate for G1 moves.</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="plunge.jpg" alt="Plunge Speed"></td>
+                                            <td class="popup-text">
+                                                <b>Plunge Speed (F)</b> is the speed (feed rate) at which the drill moves vertically (down) when cutting into the material.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="input-group">
-                    <label for="drillLocations">Drill Hole Locations (X,Y)</label>
-                    <textarea id="drillLocations" rows="6" placeholder="Format: X0,Y0 (one per line)" class="gcode-output">X10,Y10
+                        <div class="row">
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="dwellTime" value="0" min="0" step="100">
+                                <label for="dwellTime" class="active">Dwell on Bottom (ms)</label>
+                                <span class="helper-text">Time in milliseconds (0 for none).</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="dwell.jpg" alt="Dwell Time"></td>
+                                            <td class="popup-text">
+                                                <b>Dwell Time (G4)</b> is a pause commanded at the bottom of the hole, to ensure the hole bottom is clear. Specified in milliseconds.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="input-field col s12 m6">
+                                <input type="number" id="safeZ" value="2.0" min="0.1" step="0.1">
+                                <label for="safeZ" class="active">Safe Z Clearance (mm)</label>
+                                <span class="helper-text">Z height for rapid moves (G0).</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="safety_height.jpg" alt="Safe Z Clearance"></td>
+                                            <td class="popup-text">
+                                                <b>Safe Z Clearance</b> is the Z-height above the material used for rapid horizontal travel (G0) between holes or during chip clearing.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col s12">
+                                <p>
+                                    <label>
+                                        <input type="checkbox" id="peckerDrilling" />
+                                        <span style="font-weight: 500; color: #424242;">Enable Pecker Drilling (G0 Z-Clearance)</span>
+                                    </label>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div id="peckField" class="input-field col s12 hide">
+                                <input type="number" id="numPecks" value="5" min="2" step="1">
+                                <label for="numPecks" class="active">Number of Pecks</label>
+                                <span class="helper-text">Minimum 2 pecks.</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td><img src="peck.jpg" alt="Number of Pecks"></td>
+                                            <td class="popup-text">
+                                                <b>Number of Pecks</b> divides the total plunge depth into equal segments. After each peck, the tool retracts to the top to clear chips.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-field col s12">
+                                <textarea id="drillLocations" class="materialize-textarea" style="height: 120px;">X10,Y10
 X50,Y10
 X50,Y50
 X10,Y50</textarea>
-                    <p class="text-xs text-gray-500 mt-1">Enter X and Y coordinates separated by a comma (or space/tab).</p>
-                    <div class="popup">
-                        <table class="popup-table">
-                            <tr>
-                                <td class="popup-text">
-                                    <b>Drill Hole Locations</b> are the X and Y coordinates of the center of each hole, relative to the work zero (G90). Enter one coordinate pair per line.
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
+                                <label for="drillLocations" class="active">Drill Hole Locations (X,Y)</label>
+                                <span class="helper-text">Enter X and Y coordinates separated by a comma (or space/tab).</span>
+                                <div class="popup">
+                                    <table class="popup-table">
+                                        <tr>
+                                            <td class="popup-text">
+                                                <b>Drill Hole Locations</b> are the X and Y coordinates of the center of each hole, relative to the work zero (G90). Enter one coordinate pair per line.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="flex justify-center space-x-4">
-                    <button id="generateDownloadBtn" class="btn-primary w-full md:w-auto flex items-center justify-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Generate & Download</span>
-                    </button>
-                    <button id="generatePreviewBtn" class="btn-secondary w-full md:w-auto flex items-center justify-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Generate & Preview</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="space-y-6">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">G-Code Visualization and Preview</h2>
-                
-                <div id="gcodeViewerContainer" class="bg-gray-200 border border-gray-300 rounded-lg shadow-inner flex items-center justify-center">
-                    <canvas id="gcodeCanvas" style="width: 100%; height: 100%;"></canvas>
-                    <p id="viewerPlaceholder" class="text-gray-500 text-center p-4 absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">Click "Generate & Preview" to load the G-Code visualization here.</p>
-                </div>
-
-                <div class="border border-gray-300 rounded-lg shadow-sm">
-                    <div id="accordionHeader" class="accordion-header p-3 bg-gray-100 rounded-t-lg">
-                        <span class="text-base font-semibold text-gray-700">Raw Generated G-Code</span>
-                        <svg id="accordionIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transform transition-transform" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div id="accordionContent" class="accordion-content">
-                        <div class="relative">
-                            <textarea id="gcodeOutput" rows="15" readonly class="w-full bg-gray-100 p-3 gcode-output text-gray-800 rounded-lg shadow-inner"></textarea>
-                            <div id="download-message" class="absolute bottom-3 left-3 text-xs text-green-700 font-semibold bg-green-100 px-2 py-1 rounded hidden">Download starting...</div>
+                        <div class="row">
+                            <div class="col s12 center-align">
+                                <button id="generateDownloadBtn" class="btn waves-effect waves-light primary-bg" style="margin-right: 8px;">
+                                    <i class="material-icons left">get_app</i>
+                                    Generate & Download
+                                </button>
+                                <button id="generatePreviewBtn" class="btn waves-effect waves-light secondary-bg">
+                                    <i class="material-icons left">visibility</i>
+                                    Generate & Preview
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Right Column: Visualization -->
+                    <div class="col s12 l6">
+                        <h5 class="section-title">G-Code Visualization and Preview</h5>
+                        <div class="divider" style="margin-bottom: 1.5rem;"></div>
+
+                        <div id="gcodeViewerContainer">
+                            <canvas id="gcodeCanvas"></canvas>
+                            <p id="viewerPlaceholder">Click "Generate & Preview" to load the G-Code visualization here.</p>
+                        </div>
+
+                        <ul class="collapsible" style="margin-top: 1.5rem;">
+                            <li>
+                                <div class="collapsible-header">
+                                    <i class="material-icons">code</i>
+                                    Raw Generated G-Code
+                                </div>
+                                <div class="collapsible-body" style="position: relative;">
+                                    <textarea id="gcodeOutput" readonly class="gcode-output" style="min-height: 300px; width: 100%; border: none; background-color: transparent;"></textarea>
+                                    <div id="download-message" class="download-message hide">Download starting...</div>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div id="error-message" class="error-message hide" style="margin-top: 1rem;"></div>
+                    </div>
                 </div>
-                <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
             </div>
         </div>
     </div>
 
+    <!-- Materialize JavaScript -->
+    <script src="./js/materialize.js"></script>
+
     <script type="module">
-        // Import the GCodePreview library using the alpha version
         import * as GCodePreview from "https://esm.sh/gcode-preview";
+
+        // Initialize Materialize components
+        document.addEventListener('DOMContentLoaded', function() {
+            M.Collapsible.init(document.querySelectorAll('.collapsible'));
+            M.updateTextFields();
+        });
 
         // DOM Elements
         const plungeDepthInput = document.getElementById('plungeDepth');
@@ -353,56 +394,33 @@ X10,Y50</textarea>
         const numPecksInput = document.getElementById('numPecks');
         const drillLocationsTextarea = document.getElementById('drillLocations');
         const gcodeOutputTextarea = document.getElementById('gcodeOutput');
-        const generateDownloadBtn = document.getElementById('generateDownloadBtn'); 
-        const generatePreviewBtn = document.getElementById('generatePreviewBtn'); 
+        const generateDownloadBtn = document.getElementById('generateDownloadBtn');
+        const generatePreviewBtn = document.getElementById('generatePreviewBtn');
         const errorDiv = document.getElementById('error-message');
         const downloadMessage = document.getElementById('download-message');
-        const accordionHeader = document.getElementById('accordionHeader');
-        const accordionContent = document.getElementById('accordionContent');
-        const accordionIcon = document.getElementById('accordionIcon');
         const gcodeCanvas = document.getElementById('gcodeCanvas');
         const viewerPlaceholder = document.getElementById('viewerPlaceholder');
 
         const fmt = (n) => n.toFixed(3);
 
-        // --- GCodePreview Initialization ---
-        // Initialize the viewer instance once, attaching it to the canvas.
+        // Initialize GCode Preview
         const preview = new GCodePreview.init({
             canvas: gcodeCanvas,
             lineWidth: 5,
             lineHeight: 1,
             renderTravel: true,
-            renderExtrusion: true, // Keep extrusion for visual path differentiation
+            renderExtrusion: true,
             renderTubes: false,
             buildVolume: {
-              x: 200, // Based on dummy data, set a reasonable size
-              y: 200
+                x: 200,
+                y: 200
             }
         });
-        // Initial clearing to show only the background/placeholder until preview is clicked
-        preview.clear(); 
-        // --- End GCodePreview Initialization ---
+        preview.clear();
 
-
-        // --- Accordion Logic (Moved to this module script for cleaner access) ---
-        accordionHeader.addEventListener('click', () => {
-            const isCollapsed = !accordionContent.classList.contains('active');
-            
-            accordionContent.classList.toggle('active');
-
-            if (isCollapsed) {
-                accordionIcon.classList.add('rotate-180');
-                accordionContent.style.maxHeight = accordionContent.scrollHeight + "px";
-            } else {
-                accordionIcon.classList.remove('rotate-180');
-                accordionContent.style.maxHeight = "0";
-            }
-        });
-
-        // --- Event Listeners ---
-
+        // Event Listeners
         peckerDrillingCheckbox.addEventListener('change', () => {
-            peckField.classList.toggle('hidden', !peckerDrillingCheckbox.checked);
+            peckField.classList.toggle('hide', !peckerDrillingCheckbox.checked);
         });
 
         generateDownloadBtn.addEventListener('click', () => {
@@ -412,23 +430,21 @@ X10,Y50</textarea>
             }
         });
 
-        generatePreviewBtn.addEventListener('click', () => { 
+        generatePreviewBtn.addEventListener('click', () => {
             const generatedCode = generateGCode();
             if (generatedCode) {
                 streamGCodeToViewer(generatedCode);
             }
         });
 
-        // --- Utility Functions ---
-
         function displayError(message) {
             errorDiv.textContent = message;
-            errorDiv.classList.remove('hidden');
+            errorDiv.classList.remove('hide');
             gcodeOutputTextarea.value = message;
         }
 
         function clearError() {
-             errorDiv.classList.add('hidden');
+            errorDiv.classList.add('hide');
         }
 
         function parseLocations(text) {
@@ -450,11 +466,6 @@ X10,Y50</textarea>
             return points;
         }
 
-        /**
-         * Generates the G-Code string based on inputs.
-         * (Same logic as before, just included here for completeness)
-         * @returns {string|null} The final G-Code string or null on validation failure.
-         */
         function generateGCode() {
             clearError();
 
@@ -466,20 +477,18 @@ X10,Y50</textarea>
             const numPecks = isPeckerDrilling ? parseInt(numPecksInput.value) : 1;
             const points = parseLocations(drillLocationsTextarea.value);
 
-            // --- Validation ---
+            // Validation
             if (isNaN(plungeDepth) || plungeDepth <= 0) { displayError("Plunge Depth must be a positive number."); return null; }
             if (isNaN(plungeSpeed) || plungeSpeed <= 0) { displayError("Plunge Speed must be a positive number."); return null; }
             if (isNaN(safeZ) || safeZ < 0) { displayError("Safe Z Clearance must be non-negative."); return null; }
             if (points.length === 0) { displayError("No valid drill hole locations found. Please enter X,Y coordinates."); return null; }
             if (isPeckerDrilling && (isNaN(numPecks) || numPecks < 2)) { displayError("Number of Pecks must be 2 or more for pecker drilling."); return null; }
 
-            // --- Calculation ---
             const finalZ = -plungeDepth;
             const Z_CLEARANCE = safeZ;
 
             let gcode = [];
 
-            // --- Header/Initialization ---
             gcode.push(`; --- CNC Drilling Path Generator G-Code ---`);
             gcode.push(`; Plunge Depth: ${fmt(plungeDepth)}mm | Feed Rate: ${fmt(plungeSpeed)} mm/min`);
             if (isPeckerDrilling) {
@@ -488,18 +497,13 @@ X10,Y50</textarea>
                 gcode.push(`; Standard Drilling (G81 cycle emulation).`);
             }
             gcode.push(`G90 G21 ; Absolute positioning, Metric units`);
-            gcode.push(`M03 S10000 ; Spindle On (Adjust S-value as needed)`);
+            gcode.push(`M03 S10000 ; Spindle On`);
             gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Move to safe clearance Z`);
             gcode.push(``);
 
-            // --- Drill Cycle Generation ---
             points.forEach((p, index) => {
                 gcode.push(`; --- Hole ${index + 1}: X${p.x} Y${p.y} ---`);
-
-                // 1. Rapid move to XY location
                 gcode.push(`G0 X${p.x} Y${p.y}`);
-
-                // 2. Perform Drilling Operation (Standard or Pecker)
 
                 if (isPeckerDrilling) {
                     const peckDepth = plungeDepth / numPecks;
@@ -513,28 +517,24 @@ X10,Y50</textarea>
                         }
 
                         const Z_target = -currentZ;
-
                         gcode.push(`G1 Z${fmt(Z_target)} F${fmt(plungeSpeed)} ; Peck ${i} of ${numPecks}`);
 
                         if (currentZ < plungeDepth) {
-                            gcode.push(`G0 Z0 F${fmt(plungeSpeed * 2)}; Clear chips`); // Clear chips to top, upwards movement is double of plunge.
+                            gcode.push(`G0 Z0 F${fmt(plungeSpeed * 2)}; Clear chips`);
                         }
                     }
                 } else {
                     gcode.push(`G1 Z${fmt(finalZ)} F${fmt(plungeSpeed)} ; Single Plunge`);
                 }
 
-                // 3. Dwell on bottom (if required)
                 if (dwellTimeMs > 0) {
                     gcode.push(`G4 P${fmt(dwellTimeMs / 1000)} ; Dwell for ${dwellTimeMs}ms`);
                 }
 
-                // 4. Retract to safe Z
                 gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Retract to safe height`);
                 gcode.push(``);
             });
 
-            // --- Footer ---
             gcode.push(`; --- G-Code End ---`);
             gcode.push(`M05 ; Stop Spindle`);
             gcode.push(`G0 Z${fmt(Z_CLEARANCE)} ; Final move to safe Z`);
@@ -545,11 +545,8 @@ X10,Y50</textarea>
             return finalGCode;
         }
 
-        /**
-         * Triggers a file download.
-         */
         function triggerDownload(gcode) {
-            downloadMessage.classList.remove('hidden');
+            downloadMessage.classList.remove('hide');
 
             const plungeDepth = Math.abs(parseFloat(plungeDepthInput.value) || 0).toFixed(1);
             const filename = `cnc_drill_D${plungeDepth}.gcode`;
@@ -566,39 +563,25 @@ X10,Y50</textarea>
             URL.revokeObjectURL(url);
 
             setTimeout(() => {
-                downloadMessage.classList.add('hidden');
+                downloadMessage.classList.add('hide');
             }, 3000);
         }
 
-        /**
-         * Loads G-Code into the GCodePreview viewer.
-         * @param {string} gcode Content of the G-Code file.
-         */
         function streamGCodeToViewer(gcode) {
-            // Hide placeholder text and ensure canvas is visible
             viewerPlaceholder.style.display = 'none';
             gcodeCanvas.style.display = 'block';
 
-            // Clear any previous render and load the new G-Code
             preview.clear();
             preview.processGCode(gcode);
-            
-            // You may want to center the view after processing:
             preview.render();
-            preview.center(); 
+            preview.center();
         }
 
-        // Initialize by generating code on load
-        window.onload = function() {
+        // Initial generation on page load
+        window.addEventListener('load', function() {
             generateGCode();
-            peckField.classList.toggle('hidden', !peckerDrillingCheckbox.checked);
-
-            // Set a default max-height for the accordion content to zero (collapsed)
-            accordionContent.style.maxHeight = "0";
-            accordionContent.classList.remove('active'); 
-            accordionIcon.classList.remove('rotate-180');
-        };
-
+            peckField.classList.toggle('hide', !peckerDrillingCheckbox.checked);
+        });
     </script>
 </body>
 </html>
