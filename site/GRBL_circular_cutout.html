@@ -4,84 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRBL Circular Cutout Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="./css/materialize.min.css">
+
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <script type="module">
         import * as GCodePreview from "https://esm.sh/gcode-preview@3.0.0-alpha.4";
-
-        // Expose GCodePreview globally so it can be accessed by the main script
         window.GCodePreview = GCodePreview;
     </script>
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#06b6d4',
-                        'secondary': '#0e7490',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        .input-group {
-            position: relative;
-        }
-        .input-group label {
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 4px;
-            display: block;
-        }
-        .input-group input, .input-group textarea {
-            border: 1px solid #d1d5db;
-            padding: 8px 12px;
-            border-radius: 6px;
-            width: 100%;
-            transition: border-color 0.2s;
-        }
-        .input-group input:focus, .input-group textarea:focus {
-            outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 1px #06b6d4;
-        }
-        .btn-primary {
-            background-color: #06b6d4;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn-primary:hover {
-            background-color: #0e7490;
-        }
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-        .btn-secondary {
-            background-color: #f3f4f6;
-            color: #1f2937;
-            border: 1px solid #d1d5db;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn-secondary:hover {
-            background-color: #e5e7eb;
-        }
-        .btn-secondary:active {
-            transform: scale(0.98);
+        :root {
+            --primary-color: #06b6d4;
+            --primary-dark: #0e7490;
         }
 
-        /* Popup Styles */
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .brand-logo {
+            color: var(--primary-color) !important;
+        }
+
+        /* Input field styling */
+        .input-field input:focus,
+        .input-field textarea:focus {
+            border-bottom: 1px solid var(--primary-color) !important;
+            box-shadow: 0 1px 0 0 var(--primary-color) !important;
+        }
+
+        .input-field input:focus + label,
+        .input-field textarea:focus + label {
+            color: var(--primary-color) !important;
+        }
+
+        /* Button styling */
+        .btn-primary {
+            background-color: var(--primary-color) !important;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark) !important;
+        }
+
+        /* 3D View */
+        #cnc-3d-view {
+            height: 300px;
+            background-color: #d3d3d3;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 2px solid var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gcode-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Popup/Tooltip styling */
+        .input-field {
+            position: relative;
+        }
+
         .popup {
             visibility: hidden;
             opacity: 0;
@@ -91,255 +83,288 @@
             top: 100%;
             left: 0;
             margin-top: 5px;
-
             background-color: white;
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             max-width: 290px;
             min-width: 290px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #e0e0e0;
         }
 
-        .input-group:hover .popup {
+        .input-field:hover .popup {
             visibility: visible;
             opacity: 1;
         }
 
-        /* Popup Table Layout */
         .popup-table {
             width: 100%;
             border-collapse: collapse;
         }
+
         .popup-table td:first-child {
             width: 120px;
             padding-right: 10px;
             vertical-align: top;
         }
+
         .popup-table td:last-child {
             width: calc(100% - 120px);
             vertical-align: top;
         }
+
         .popup-table img {
             display: block;
             max-width: 100%;
             height: auto;
             border-radius: 4px;
         }
+
         .popup-text {
-            font-family: inherit;
             font-size: 0.875rem;
             color: #374151;
             line-height: 1.4;
         }
 
-        /* 3D View Styling */
-        #cnc-3d-view {
-            height: 300px;
-            background-color: #d3d3d3;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 2px solid #06b6d4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Collapsible styling */
+        .collapsible-header {
+            background-color: #e0e0e0;
+            cursor: pointer;
         }
-        #gcode-canvas {
-            width: 100%;
-            height: 100%;
+
+        .collapsible-header:hover {
+            background-color: #d0d0d0;
+        }
+
+        .collapsible-header i {
+            transition: transform 0.3s;
+        }
+
+        .collapsible.active .collapsible-header i {
+            transform: rotate(180deg);
+        }
+
+        /* Order of operations list */
+        .operations-list {
+            padding-left: 20px;
+        }
+
+        .operations-list li {
+            margin-bottom: 8px;
+        }
+
+        /* Hero image */
+        .hero-image {
             display: block;
+            margin: 0 auto 2rem;
+            max-width: 50%;
+            height: auto;
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body>
+    <div class="container">
+        <div class="card-panel white" style="margin-top: 20px;">
+            <h4 class="brand-logo center-align">GRBL Circular Cutout G-Code Generator</h4>
+            <p class="center-align grey-text text-darken-1">
+                Generates G-Code for a circular cutout (or profile pass) using a single circle (G3 arc) per depth pass.
+                The tool center is offset outside the defined diameter. Zero point is the center (X0, Y0).
+            </p>
 
-    <div class="max-w-6xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
-        <h1 class="text-3xl font-bold text-center text-primary mb-6">GRBL Circular Cutout G-Code Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Generates G-Code for a circular cutout (or profile pass) using a single circle (G3 arc) per depth pass. The tool center is offset outside the defined diameter. Zero point is the center (X0, Y0).</p>
-        <img src="circle-cutout.png" width="50%" style="display: block; margin-left: auto; margin-right: auto; margin-bottom: 2rem;">
+            <img src="circle-cutout.png" class="hero-image responsive-img" alt="Circular Cutout Diagram">
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-700 mb-4">3D Toolpath Preview</h2>
-                <p class="text-xs text-gray-500 mt-1">The path will appear once you press the generate button.</p>
-                <div id="cnc-3d-view">
-                    <canvas id="gcode-canvas"></canvas>
-                </div>
-                <table class="w-full">
-                    <tr>
-                        <td class="w-1/2 p-2 align-top">
-                            <h1 class="text-xl font-bold mb-2">Order of operations:</h1>
-                            <ol class="list-decimal list-inside ml-4 text-gray-700">
-                                <li>Zero the machine at the center (X0, Y0).</li>
-                                <li>Tool will lift up and travel to the cutting radius.</li>
-                                <li>Tool will plunge and cut circular path.</li>
-                                <li>Once finished it will lift up and travel to center at safe height.</li>
-                            </ol>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+            <div class="row">
+                <!-- 3D Preview Column -->
+                <div class="col s12 l6">
+                    <h5 class="grey-text text-darken-2">3D Toolpath Preview</h5>
+                    <p class="grey-text">The path will appear once you press the generate button.</p>
 
-            <div>
-                <h2 class="text-xl font-semibold text-gray-700 mb-4">Input Parameters</h2>
-                <div id="form-section" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="input-group">
-                        <label for="diameter">Finished Cutout Diameter (mm)</label>
-                        <input type="number" id="diameter" value="50" min="1" step="0.1" required>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="cutout_dia.jpg" style="object-fit: cover;" alt="Diameter Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Finished Cutout Diameter</b> is the final diameter of the circular cutout after machining. The tool path is calculated to achieve this finished size.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+                    <div id="cnc-3d-view">
+                        <canvas id="gcode-canvas"></canvas>
                     </div>
 
-                    <div class="input-group">
-                        <label for="depth">Total Depth (Z, mm)</label>
-                        <input type="number" id="depth" value="10.0" step="0.01" required>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="pocket_depth.jpg" style="object-fit: cover;" alt="Total Depth Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Total Depth (Z)</b> is the final, negative Z-coordinate the tool will reach. This defines how deep the cutout will be.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="toolD">Tool Diameter (mm)</label>
-                        <input type="number" id="toolD" value="6.0" min="0.1" step="0.1" required>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="tool_dia.jpg" style="object-fit: cover;" alt="Tool Diameter Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Tool Diameter</b> is the width of the end mill used for cutting. The tool path is offset by half this diameter outside the finished diameter.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="stepDown">Stepdown (Z, mm)</label>
-                        <input type="number" id="stepDown" value="2.0" min="0.01" step="0.01" required>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="step_down.jpg" style="object-fit: cover;" alt="Stepdown Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Stepdown (Z)</b> is the maximum depth the tool will cut in a single pass before starting the next circular layer.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="feedRate">Feed Rate (XY, mm/min)</label>
-                        <input type="number" id="feedRate" value="800" min="1" step="10" required>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="feedrate.jpg" style="object-fit: cover;" alt="Feed Rate Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Feed Rate (XY)</b> is the speed at which the tool moves along the circular path during cutting operations.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="plungeRate">Plunge Rate (Z, mm/min)</label>
-                        <input type="number" id="plungeRate" value="200" min="1" step="10" required>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="plunge.jpg" style="object-fit: cover;" alt="Plunge Rate Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Plunge Rate (Z)</b> is the speed at which the tool moves vertically (down) when entering the material for each circular pass.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="input-group col-span-full sm:col-span-1">
-                        <label for="safetyZ">Safety Z Height (mm)</label>
-                        <input type="number" id="safetyZ" value="5.0" min="1.0" step="0.1" required>
-                        <div class="popup">
-                            <table class="popup-table">
-                                <tr>
-                                    <td><img src="safety_height.jpg" style="object-fit: cover;" alt="Safety Z Height Diagram"></td>
-                                    <td class="popup-text">
-                                        <b>Safety Z Height</b> is a clear height above the material that the tool uses when moving between non-cutting operations.
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+                    <div class="section">
+                        <h6><strong>Order of operations:</strong></h6>
+                        <ol class="operations-list grey-text text-darken-2">
+                            <li>Zero the machine at the center (X0, Y0).</li>
+                            <li>Tool will lift up and travel to the cutting radius.</li>
+                            <li>Tool will plunge and cut circular path.</li>
+                            <li>Once finished it will lift up and travel to center at safe height.</li>
+                        </ol>
                     </div>
                 </div>
+
+                <!-- Input Parameters Column -->
+                <div class="col s12 l6">
+                    <h5 class="grey-text text-darken-2">Input Parameters</h5>
+
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <input type="number" id="diameter" value="50" min="1" step="0.1" required>
+                            <label for="diameter" class="active">Finished Cutout Diameter (mm)</label>
+                            <div class="popup">
+                                <table class="popup-table">
+                                    <tr>
+                                        <td><img src="cutout_dia.jpg" alt="Diameter Diagram"></td>
+                                        <td class="popup-text">
+                                            <b>Finished Cutout Diameter</b> is the final diameter of the circular cutout after machining.
+                                            The tool path is calculated to achieve this finished size.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="number" id="depth" value="10.0" step="0.01" required>
+                            <label for="depth" class="active">Total Depth (Z, mm)</label>
+                            <div class="popup">
+                                <table class="popup-table">
+                                    <tr>
+                                        <td><img src="pocket_depth.jpg" alt="Total Depth Diagram"></td>
+                                        <td class="popup-text">
+                                            <b>Total Depth (Z)</b> is the final, negative Z-coordinate the tool will reach.
+                                            This defines how deep the cutout will be.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="number" id="toolD" value="6.0" min="0.1" step="0.1" required>
+                            <label for="toolD" class="active">Tool Diameter (mm)</label>
+                            <div class="popup">
+                                <table class="popup-table">
+                                    <tr>
+                                        <td><img src="tool_dia.jpg" alt="Tool Diameter Diagram"></td>
+                                        <td class="popup-text">
+                                            <b>Tool Diameter</b> is the width of the end mill used for cutting.
+                                            The tool path is offset by half this diameter outside the finished diameter.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="number" id="stepDown" value="2.0" min="0.01" step="0.01" required>
+                            <label for="stepDown" class="active">Stepdown (Z, mm)</label>
+                            <div class="popup">
+                                <table class="popup-table">
+                                    <tr>
+                                        <td><img src="step_down.jpg" alt="Stepdown Diagram"></td>
+                                        <td class="popup-text">
+                                            <b>Stepdown (Z)</b> is the maximum depth the tool will cut in a single pass
+                                            before starting the next circular layer.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="number" id="feedRate" value="800" min="1" step="10" required>
+                            <label for="feedRate" class="active">Feed Rate (XY, mm/min)</label>
+                            <div class="popup">
+                                <table class="popup-table">
+                                    <tr>
+                                        <td><img src="feedrate.jpg" alt="Feed Rate Diagram"></td>
+                                        <td class="popup-text">
+                                            <b>Feed Rate (XY)</b> is the speed at which the tool moves along the circular path
+                                            during cutting operations.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="number" id="plungeRate" value="200" min="1" step="10" required>
+                            <label for="plungeRate" class="active">Plunge Rate (Z, mm/min)</label>
+                            <div class="popup">
+                                <table class="popup-table">
+                                    <tr>
+                                        <td><img src="plunge.jpg" alt="Plunge Rate Diagram"></td>
+                                        <td class="popup-text">
+                                            <b>Plunge Rate (Z)</b> is the speed at which the tool moves vertically (down)
+                                            when entering the material for each circular pass.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="number" id="safetyZ" value="5.0" min="1.0" step="0.1" required>
+                            <label for="safetyZ" class="active">Safety Z Height (mm)</label>
+                            <div class="popup">
+                                <table class="popup-table">
+                                    <tr>
+                                        <td><img src="safety_height.jpg" alt="Safety Z Height Diagram"></td>
+                                        <td class="popup-text">
+                                            <b>Safety Z Height</b> is a clear height above the material that the tool uses
+                                            when moving between non-cutting operations.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="flex justify-center mb-8 space-x-4">
-            <button onclick="generateCutoutGCode(false)" id="preview-btn" class="btn-secondary flex items-center space-x-2">
-                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                </svg>
-                <span>Generate & Preview G-Code</span>
-            </button>
-             <button onclick="generateCutoutGCode(true)" id="download-btn" class="btn-primary flex items-center space-x-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
-                </svg>
-                <span>Generate & Download G-Code</span>
-            </button>
-        </div>
+            <!-- Action Buttons -->
+            <div class="center-align section">
+                <button onclick="generateCutoutGCode(false)" class="btn waves-effect waves-light grey">
+                    <i class="material-icons left">visibility</i>
+                    Generate & Preview G-Code
+                </button>
+                <button onclick="generateCutoutGCode(true)" class="btn-primary btn waves-effect waves-light">
+                    <i class="material-icons left">file_download</i>
+                    Generate & Download G-Code
+                </button>
+            </div>
 
-        <div id="output-section" class="mt-8">
-            <button class="w-full text-left p-3 rounded-t-lg bg-gray-200 hover:bg-gray-300 transition flex items-center justify-between" onclick="toggleGCode()">
-                <h2 class="text-xl font-semibold text-gray-700 m-0">Raw G-Code Preview</h2>
-                <svg id="collapse-icon" class="h-6 w-6 transform transition-transform" viewBox="0 0 20 20" fill="currentColor" style="transform: rotate(-90deg);">
-                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-            </button>
-            <textarea id="gcode-output" rows="15" class="w-full bg-gray-100 p-4 font-mono text-sm rounded-b-lg border-t-0" readonly placeholder="G-Code will appear here after generation..." style="display: none;"></textarea>
-        </div>
+            <!-- G-Code Output -->
+            <ul class="collapsible" id="gcode-collapsible">
+                <li>
+                    <div class="collapsible-header grey lighten-3">
+                        <span class="grey-text text-darken-3"><strong>Raw G-Code Preview</strong></span>
+                        <i class="material-icons right">expand_more</i>
+                    </div>
+                            <div class="collapsible-body">
+                                <textarea id="gcode-output" readonly placeholder="G-Code will appear here after generation..."></textarea>
+                            </div>
+                </li>
+            </ul>
 
-        <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
+            <!-- Error Message -->
+            <div id="error-message" class="card-panel red lighten-4 red-text text-darken-4" style="display: none;"></div>
+        </div>
     </div>
 
-<script>
-        // Constants for coordinate systems and units
-        const Z_CLEARANCE = 2.0;
+    <!-- Materialize JavaScript -->
+    <script src="./js/materialize.min.js"></script>
 
-        // Utility to convert number to a fixed precision string (e.g., '1.234')
+    <script>
+        // Constants
+        const Z_CLEARANCE = 2.0;
         const fmt = (n) => n.toFixed(3);
 
-        /**
-         * Generates the G-Code for a circular cutout operation using multiple Z depth passes.
-         * The tool center is offset OUTSIDE the cutout diameter.
-         * @param {boolean} triggerDownload - If true, trigger file download. Otherwise, only update preview.
-         */
+        // Initialize Materialize components
+        document.addEventListener('DOMContentLoaded', function() {
+            M.Collapsible.init(document.querySelectorAll('.collapsible'));
+            M.updateTextFields();
+        });
+
         function generateCutoutGCode(triggerDownload) {
             const output = document.getElementById('gcode-output');
             const errorDiv = document.getElementById('error-message');
-            errorDiv.classList.add('hidden');
+            errorDiv.style.display = 'none';
             output.value = '';
 
-            // --- 1. Read Inputs ---
+            // Read inputs
             const diameter = parseFloat(document.getElementById('diameter').value);
             let depth = parseFloat(document.getElementById('depth').value);
             const toolD = parseFloat(document.getElementById('toolD').value);
@@ -348,28 +373,24 @@
             const plungeRate = parseFloat(document.getElementById('plungeRate').value);
             const safetyZ = parseFloat(document.getElementById('safetyZ').value);
 
-            // Derived values
             const toolR = toolD / 2.0;
             const maxZSafe = safetyZ + Z_CLEARANCE;
-
-            // --- CRITICAL CUTOUT CALCULATION ---
-            // Tool center path radius = Finished Radius + Tool Radius
             const pathR = (diameter / 2.0) + toolR;
-
-            // Convert depth to a negative value
             depth = -Math.abs(depth);
 
-            // --- 2. Input Validation (Simplified) ---
-            if (isNaN(diameter) || isNaN(depth) || isNaN(toolD) || isNaN(stepDown) || isNaN(feedRate) || isNaN(plungeRate) || isNaN(safetyZ) || diameter <= 0 || toolD <= 0 || stepDown <= 0 || feedRate <= 0 || plungeRate <= 0) {
+            // Input validation
+            if (isNaN(diameter) || isNaN(depth) || isNaN(toolD) || isNaN(stepDown) ||
+                isNaN(feedRate) || isNaN(plungeRate) || isNaN(safetyZ) ||
+                diameter <= 0 || toolD <= 0 || stepDown <= 0 || feedRate <= 0 || plungeRate <= 0) {
                 errorDiv.textContent = "Please ensure all fields are positive and valid numbers.";
-                errorDiv.classList.remove('hidden');
+                errorDiv.style.display = 'block';
                 return;
             }
 
-            // --- 3. G-Code Generation ---
+            // Generate G-Code
             let gcode = [];
 
-            // 3.1 Preamble
+            // Preamble
             gcode.push(`; GRBL CIRCULAR CUTOUT GENERATOR`);
             gcode.push(`; Finished Diameter: ${fmt(diameter)}, Total Depth: ${fmt(depth)}`);
             gcode.push(`; Tool D: ${fmt(toolD)}mm, Tool Center Path Radius: ${fmt(pathR)}mm`);
@@ -389,52 +410,37 @@
             let currentZ = 0.0;
             let passCount = 0;
 
-            // 3.2 Z-Axis (Depth) Loop
+            // Z-Axis depth loop
             while (currentZ > depth + 0.001) {
                 passCount++;
                 currentZ -= stepDown;
-
-                // Clamp Z to the final depth
-                if (currentZ < depth) {
-                    currentZ = depth;
-                }
+                if (currentZ < depth) currentZ = depth;
 
                 gcode.push(`\n; === Z PASS ${passCount}: Depth Z${fmt(currentZ)} ===`);
-
-                // 2. **Plunge to the current cutting depth**
                 gcode.push(`G1 Z${fmt(currentZ)} F${fmt(plungeRate)} ; Plunge to cutting depth`);
-
-                // 3. **Cut the full circle counter-clockwise (G3)**
-                // Center is (0,0), Start is (pathR, 0). I = 0 - pathR, J = 0.
                 gcode.push(`G3 X${fmt(pathR)} Y0 I${fmt(-pathR)} J0 F${fmt(feedRate)} ; Cut Full Circle CCW`);
 
-                // Break the Z loop if we hit the final depth
-                if (Math.abs(currentZ - depth) < 0.001) {
-                    break;
-                }
+                if (Math.abs(currentZ - depth) < 0.001) break;
             }
 
-            // 3.3 Postamble (Only stop spindle and end program are needed)
+            // Postamble
             gcode.push(`\n; --- START POSTAMBLE ---`);
-            // 4. **Retract to Safe Z
-            gcode.push(`G0 Z${fmt(maxZSafe)} ; Retract to Z_MAX_SAFE (End of Z Pass)`);
+            gcode.push(`G0 Z${fmt(maxZSafe)} ; Retract to Z_MAX_SAFE`);
             gcode.push(`M5 ; Stop spindle`);
             gcode.push(`M2 ; Program end`);
             gcode.push(`; --- END POSTAMBLE ---`);
 
             const finalGCode = gcode.join('\n');
             output.value = finalGCode;
+            M.textareaAutoResize(output);
 
-            // --- 4. Preview / Download Execution ---
+            // 3D Preview
             if (typeof window.GCodePreview !== 'undefined') {
                 const canvas = document.getElementById('gcode-canvas');
-
-                // Clear any previous canvas/viewer instance
                 canvas.parentNode.replaceChild(canvas.cloneNode(true), canvas);
                 const newCanvas = document.getElementById('gcode-canvas');
 
                 const maxDepth = Math.abs(depth);
-
                 const preview = new GCodePreview.init({
                     canvas: newCanvas,
                     lineWidth: 2,
@@ -453,19 +459,14 @@
                 });
 
                 preview.processGCode(finalGCode);
-
             } else {
-                console.error("GCodePreview library is not defined. Ensure the ESM import loaded correctly.");
-                const viewerDiv = document.getElementById('cnc-3d-view');
-                viewerDiv.innerHTML = `<canvas id="gcode-canvas"></canvas><div style="position:absolute; top:50%; width:100%; text-align:center; color: #fca5a5;">
-                    ERROR: GCodePreview library failed to load. 3D preview unavailable.
-                </div>`;
+                console.error("GCodePreview library failed to load.");
             }
 
+            // Download if requested
             if (triggerDownload) {
                 const blob = new Blob([finalGCode], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
-
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `grbl_circle_cutout_D${diameter}_Z${Math.abs(depth).toFixed(1)}.gcode`;
@@ -473,21 +474,6 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-            }
-        }
-
-        /**
-         * Toggles the visibility of the G-Code output textarea (Collapsible Feature).
-         */
-        function toggleGCode() {
-            const output = document.getElementById('gcode-output');
-            const icon = document.getElementById('collapse-icon');
-            if (output.style.display === 'none') {
-                output.style.display = 'block';
-                icon.style.transform = 'rotate(0deg)';
-            } else {
-                output.style.display = 'none';
-                icon.style.transform = 'rotate(-90deg)';
             }
         }
     </script>
