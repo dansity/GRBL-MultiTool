@@ -25,6 +25,7 @@ Use your preferred G-Code sender to run cycle.
 - Circle pocket
 - Circle cutout
 - Drilling holes
+- Helical boring multiple holes
 
 ### MACHINE COMPATIBILITY
 The generated gcode is very basic in the sense that it only uses G0, G1, G3 operations.  
@@ -38,12 +39,10 @@ It will run without internet**.
 It will not terrorize you for money.  
 Its free, open and yours forever.  
 
-**The project will run without internet, however some styling elements are downloaded on the fly.  
-Without internet connection you will not see the 3D preview and may miss some fonts and such. Will still work tho.
+**The project will run without internet, however the 3D preview will not work as the libraries are loaded from an external URL.
 
 ### What external libraries used?
 3D viewer: https://github.com/xyz-tools/gcode-preview  
-CSS and Styling: tailwindcss.com
 
 ### Lovely interface
 <img width="1298" height="873" alt="kép" src="https://github.com/user-attachments/assets/c761dd0d-a6fd-4ab5-b94f-ac6e05394347" />  
@@ -52,8 +51,11 @@ Now with tooltips:
 
 ### What's next? - Roadmap
 
-- Boring toolpath generator (similar to the current drilling) but with a helical path
-- Create a custom CSS file and free ourselves from tailwindcss without sacraficing function and simplicity
+For now I'm out of ideas and I consider the project "done". If you have any request please let me know.
+
+### AI DISCLAIMER
+
+The project used some AI but on cosmetics only. The gcode generator is handcrafted and has been troughly tested on my CNC machine.
 
 ### SUPPORT 
 If you ever make money witht this tool consider buying me a coffee.  

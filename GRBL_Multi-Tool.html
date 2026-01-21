@@ -62,13 +62,13 @@
             margin-right: -10px;
             display: flex !important;
             flex-wrap: wrap !important;
-            justify-content: center !important; /* Centers the 3 boxes in the last row */
+            justify-content: center !important;
         }
 
         .tight-grid.row .col {
             padding: 10px !important;
             box-sizing: border-box;
-            float: none !important; /* Prevents Materialize floats from breaking center alignment */
+            float: none !important;
         }
 
         .tool-card {
@@ -76,6 +76,9 @@
             width: 100%;
             max-width: 250px;
             margin: 0 auto !important;
+            height: 100%; /* Ensure cards in a row have equal height */
+            display: flex;
+            flex-direction: column;
         }
 
         .tool-card:hover {
@@ -98,15 +101,26 @@
             object-fit: contain;
         }
 
-        .card-title-custom {
+        .card-content-custom {
             padding: 12px !important;
-            font-weight: bold;
             text-align: center;
+            background-color: #f9f9f9;
+            border-top: 1px solid #eee;
+            flex-grow: 1;
+        }
+
+        .card-title-text {
+            font-weight: bold;
             font-size: 1rem;
             display: block;
             color: #333;
-            background-color: #f9f9f9;
-            border-top: 1px solid #eee;
+            margin-bottom: 5px;
+        }
+
+        .card-subtext {
+            font-size: 0.85rem;
+            color: #777;
+            line-height: 1.2;
         }
 
         .page-footer {
@@ -127,6 +141,9 @@
                 <p class="flow-text grey-text text-darken-2">
                     Quickly generate gcode for basic CNC operations without opening CAM software.
                 </p>
+                <p class="grey-text">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                </p>
             </div>
         </section>
 
@@ -136,7 +153,10 @@
                     <a href="site/GRBL_rectangle_pocket.html">
                         <div class="card hoverable tool-card">
                             <div class="card-image"><img src="site/rectangle_pocket_thumb.png" alt="Rectangle Pocket"></div>
-                            <span class="card-title-custom">Rectangle Pocket</span>
+                            <div class="card-content-custom">
+                                <span class="card-title-text">Rectangle Pocket</span>
+                                <span class="card-subtext">Clear out a rectangular area to a specific depth.</span>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -145,7 +165,10 @@
                     <a href="site/GRBL_drill_holes.html">
                         <div class="card hoverable tool-card">
                             <div class="card-image"><img src="site/drilling_thumb.png" alt="Drilling Holes"></div>
-                            <span class="card-title-custom">Drilling Holes</span>
+                            <div class="card-content-custom">
+                                <span class="card-title-text">Drilling Holes</span>
+                                <span class="card-subtext">Generate patterns for precise hole drilling operations.</span>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -154,7 +177,10 @@
                     <a href="site/GRBL_circular_pocket.html">
                         <div class="card hoverable tool-card">
                             <div class="card-image"><img src="site/circle_pocket_thumb.png" alt="Circular Pocket"></div>
-                            <span class="card-title-custom">Circular Pocket</span>
+                            <div class="card-content-custom">
+                                <span class="card-title-text">Circular Pocket</span>
+                                <span class="card-subtext">Milled circular pockets with adjustable step-over.</span>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -163,7 +189,10 @@
                     <a href="site/GRBL_rectange_cutout.html">
                         <div class="card hoverable tool-card">
                             <div class="card-image"><img src="site/rectangle_cutout_thumb.png" alt="Rectangle Cutout"></div>
-                            <span class="card-title-custom">Rectangle Cutout</span>
+                            <div class="card-content-custom">
+                                <span class="card-title-text">Rectangle Cutout</span>
+                                <span class="card-subtext">Cut completely through material for external shapes.</span>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -172,7 +201,10 @@
                     <a href="site/GRBL_circular_cutout.html">
                         <div class="card hoverable tool-card">
                             <div class="card-image"><img src="site/circle_cutout_thumb.png" alt="Circular Cutout"></div>
-                            <span class="card-title-custom">Circular Cutout</span>
+                            <div class="card-content-custom">
+                                <span class="card-title-text">Circular Cutout</span>
+                                <span class="card-subtext">Create perfect discs or holes in your workpiece.</span>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -181,7 +213,10 @@
                     <a href="site/GRBL_facing.html">
                         <div class="card hoverable tool-card">
                             <div class="card-image"><img src="site/facing_thumb.png" alt="Facing/Skimming"></div>
-                            <span class="card-title-custom">Facing/Skimming</span>
+                            <div class="card-content-custom">
+                                <span class="card-title-text">Facing/Skimming</span>
+                                <span class="card-subtext">Level the surface of your stock or spoilboard.</span>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -190,7 +225,10 @@
                     <a href="site/GRBL_boring.html">
                         <div class="card hoverable tool-card">
                             <div class="card-image"><img src="site/boring_thumb.png" alt="Helical Boring"></div>
-                            <span class="card-title-custom">Helical Boring</span>
+                            <div class="card-content-custom">
+                                <span class="card-title-text">Helical Boring</span>
+                                <span class="card-subtext">Spiral down into material for smooth, efficient holes.</span>
+                            </div>
                         </div>
                     </a>
                 </div>
