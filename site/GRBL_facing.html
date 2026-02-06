@@ -537,7 +537,11 @@
                 gcode.push(`G1 Z${fmt(currentZ)} F${fmt(plungeRate)} ; Plunge to cutting depth`);
 
                 generateToolpath(gcode, maxX, maxY, currentZ, stepover, feedRate, plungeRate, direction);
-                gcode.push(`G0 Z${fmt(safetyZ)} ; Lift to safety height (for next pass)`);
+                gcode.push(`G0 Z${fmt(safetyZ)} ; Lift to safety height`);
+                
+                if (currentZ !== depth) {
+                    gcode.push(`G0 X0 Y0 ; Return to start corner for next pass`);
+                }
 
                 if (currentZ === depth) break;
             }
